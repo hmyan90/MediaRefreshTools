@@ -8,9 +8,9 @@ class PatchFOD: PatchMedia {
     [string]$FODISOPath
     [string[]]$capabilityList
     [string]$FODPath
-    
+
     PatchFOD([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
-        [string]$newMediaPath, [string[]]$capabilityList): base($installWimPath, $wimIndex, $bootWimPath, 
+        [string]$newMediaPath, [string[]]$capabilityList): base($installWimPath, $wimIndex, $bootWimPath,
         $winREPath, $workingPath, $packagesPath, $newMediaPath) {
         $this.FODISOPath = [PatchFOD]::GetFODISOPath($packagesPath)
         $this.capabilityList = $capabilityList
@@ -70,7 +70,7 @@ class PatchFOD: PatchMedia {
         }
     }
 
-    
+
     [void]CleanUp() {
         try {
             Dismount-ISO $this.FODISOPath

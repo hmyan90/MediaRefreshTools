@@ -436,7 +436,7 @@ class DownloadContents {
     }
 
     [bool]DoDownload() {
-        
+
         if (!($this.Initialize())) { return $False }
         if (!($this.download())) { return $False }
         $this.Cleanup()

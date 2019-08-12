@@ -18,25 +18,28 @@ function Test-LangInput {
     }
 
     $isValidInput = $False
-    if ( $langList.Count -eq 0 ) { 
-        $isValidInput = $True 
-    } else {
+    if ( $langList.Count -eq 0 ) {
+        $isValidInput = $True
+    }
+    else {
         if ( !(Test-Path -Path ($driveLetter + ":\" + $arch)) ) {
             Out-Log "Language Pack not supported on this architecture" -level $([Constants]::LOG_ERROR)
-        } else {
+        }
+        else {
             $OSLangPackPath = $driveLetter + ":\" + $arch + "\langpacks\"
             $notFoundLang = [System.Collections.ArrayList]@()
-    
+
             Foreach ($lang in $langList) {
                 $LPFile = Join-Path $OSLangPackPath ("Microsoft-Windows-Client-Language-Pack_" + $arch + "_" + $lang + ".cab")
                 if ( !(Test-Path -Path $LPFile) ) {
                     $notFoundLang.add($lang) | Out-NULL
                 }
             }
-    
+
             if ( $notFoundLang.Count -gt 0 ) {
                 Out-Log "$notFoundLang not supported in Language Pack, please retry." -level $([Constants]::LOG_ERROR)
-            } else {
+            }
+            else {
                 $isValidInput = $True
             }
         }
@@ -49,7 +52,7 @@ function Test-LangInput {
         Out-Log "Failed to dismount ISO $LPISOPath. Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
         return $False
     }
-    
+
     return $isValidInput
 }
 
@@ -61,9 +64,9 @@ class PatchLP: PatchMedia {
     [string]$arch
     [string]$mainOSLangPackPath
     [string]$WinPEOCPath
-    
+
     PatchLP([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
-        [string]$newMediaPath, [string[]]$langList, [string]$arch): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath, 
+        [string]$newMediaPath, [string[]]$langList, [string]$arch): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath,
         $packagesPath, $newMediaPath) {
         $this.LPISOPath = [PatchLP]::GetLPISOPath($packagesPath)
         $this.langList = $langList
@@ -87,15 +90,16 @@ class PatchLP: PatchMedia {
             Out-Log "Failed to mount $( $this.LPISOPath ). Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
             return $False
         }
-        
+
         try {
             $this.mainOSLangPackPath = Join-Path $driveLetter":" -ChildPath $this.arch | Join-Path -ChildPath "langpacks"
             $this.WinPEOCPath = Join-Path $driveLetter":" -ChildPath "Windows Preinstallation Environment" | Join-Path -ChildPath $this.arch | Join-Path -ChildPath "WinPE_OCs"
-        } catch {
+        }
+        catch {
             Out-Log "Path doesn't exist. Detail: $( $_.Exception.Message ) " -level $([Constants]::LOG_ERROR)
             return $False
         }
-        
+
         return $True
     }
 
@@ -142,12 +146,12 @@ class PatchLP: PatchMedia {
         $envName = [Constants]::WIN_SETUP
         $needInstallSTTS = $False
         $defaultSTTSPath = (Join-Path $this.WinPEOCPath "WinPE-Speech-TTS.cab")
-        if ( !(Test-Path -Path $defaultSTTSPath) ) { 
+        if ( !(Test-Path -Path $defaultSTTSPath) ) {
             Out-Log "$defaultSTTSPath not exists, stop install all Speech-TTS for $envName" -level $([Constants]::LOG_WARNING)
         }
         else {
             Foreach ($lang in $this.langList) {
-            
+
                 $STTSFile = "WinPE-Speech-TTS-$lang.cab"
                 $STTSPath = Join-Path $this.WinPEOCPath $STTSFile
                 if ( (Test-Path -Path $STTSPath) ) {
@@ -173,7 +177,7 @@ class PatchLP: PatchMedia {
             if ( (Test-Path -Path $fontSupportPath) ) {
                 Out-Log "Install LangPack $fontSupportPath to $envName"
                 Install-Package $mountPoint $fontSupportPath
-            } 
+            }
         }
     }
 
@@ -213,7 +217,7 @@ class PatchLP: PatchMedia {
 
     [bool]PatchWinRE() {
         # Follow the documentation: https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/add-language-packs-to-windows
-        
+
         $mountPoint = Join-Path $this.workingPath $([Constants]::WINRE_MOUNT)
         $envName = [Constants]::WINRE
 
@@ -221,28 +225,28 @@ class PatchLP: PatchMedia {
             Out-Log "Mount Image $( $this.winREPath ) 1 to $mountPoint" -level $([Constants]::LOG_DEBUG)
             Mount-Image $this.winREPath 1 $mountPoint
             $winREInstalledOC = Get-WindowsPackage -Path $mountPoint
-    
+
             Foreach ($lang in $this.langList) {
-    
+
                 $winPEOCLangPath = Join-Path $this.WinPEOCPath $lang
                 $cabs = Get-ChildItem $winPEOCLangPath -name
-    
+
                 # Install lp.cab cab
                 $lpPath = Join-Path $winPEOCLangPath "lp.cab"
                 Out-Log "Install LangPack $lpPath to $envName"
                 Install-Package $mountPoint $lpPath
-    
+
                 # Install OC cab
                 Foreach ($package in $winREInstalledOC) {
-            
+
                     if ( ($package.PackageState -eq "Installed") `
-                        -and ($package.PackageName.startsWith("WinPE-")) `
-                        -and ($package.ReleaseType -eq "FeaturePack") ) {
-                        
+                            -and ($package.PackageName.startsWith("WinPE-")) `
+                            -and ($package.ReleaseType -eq "FeaturePack") ) {
+
                         $index = $package.PackageName.IndexOf("-Package")
                         if ($index -ge 0) {
                             $OCCab = $package.PackageName.Substring(0, $index) + "_" + $lang + ".cab"
-                            
+
                             if ($cabs.Contains($OCCab)) {
                                 $OCCabPath = Join-Path $winPEOCLangPath $OCCab
                                 Out-Log "Install LangPack $OCCabPath to $envName"

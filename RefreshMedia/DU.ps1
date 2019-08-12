@@ -5,9 +5,9 @@
 
 class PatchDU: PatchMedia {
 
-    [string]$SSUPath    # for MainOS and WinRE
-    [string]$SafeOSPath # for WinRE only
-    [string]$LCUPath    # for
+    [string]$SSUPath
+    [string]$SafeOSPath
+    [string]$LCUPath
     [string]$SetupDUPath
 
     PatchDU ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,

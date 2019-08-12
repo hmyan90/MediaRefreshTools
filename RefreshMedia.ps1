@@ -215,8 +215,7 @@ function CheckParameters {
         $imageName = (Get-ImageName $origInstallWimPath $imageIndex)
         Out-Log "Image Name is: $imageName"
     }
-    catch
-    {
+    catch {
         Out-Log "Image $origInstallWimPath Index is error. Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
         return $False
     }
@@ -336,14 +335,15 @@ function SplitInstallWim {
         [int]$maxInstallSize)
 
     try {
-        $dstWimPath = $installWimPath.substring(0, $installWimPath.length-4) + ".swm"
+        $dstWimPath = $installWimPath.substring(0, $installWimPath.length - 4) + ".swm"
 
         if ( (Get-Item $installWimPath).length -gt "$($maxInstallSize)MB" ) {
             Out-Log "Begin to split install.wim"
             Split-Image $installWimPath $dstWimPath $maxInstallSize
             Remove-Item $installWimPath
         }
-    } catch {
+    }
+    catch {
         # won't treat this as fatal error
         Out-Log "Failed to split install.wim. Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
     }
@@ -382,7 +382,7 @@ function Main {
     [cmdletbinding()]
     param()
 
-    Out-Log "Enter RefreshMedia execute" -level $([Constants]::LOG_DEBUG) 
+    Out-Log "Enter RefreshMedia execute" -level $([Constants]::LOG_DEBUG)
     [string]$script:workingPath = Join-Path $newMediaPath $([Constants]::WORKING_DIR)
 
     $ok = (CheckParameters)
@@ -393,7 +393,8 @@ function Main {
     if ( $arch -eq $([Constants]::ARCH_UNKNOWN) ) {
         Out-Log "Image $imagePath architecture is: $arch" -level $([Constants]::LOG_ERROR)
         return
-    } else {
+    }
+    else {
         Out-Log "Get media architecture is: $arch"
     }
 
@@ -417,31 +418,31 @@ function Main {
     $dstInstallWimPath = Join-Path $newMediaPath $([Constants]::INSTALL_WIM_PATH)
 
     $patchDUInstance = New-Object PatchDU -ArgumentList $dstInstallWimPath,
-                                                        $imageIndex,
-                                                        $bootWimPath,
-                                                        $winREPath,
-                                                        $workingPath,
-                                                        $packagesPath,
-                                                        $newMediaPath
+    $imageIndex,
+    $bootWimPath,
+    $winREPath,
+    $workingPath,
+    $packagesPath,
+    $newMediaPath
 
     $patchFODInstance = New-Object PatchFOD -ArgumentList $dstInstallWimPath,
-                                                        $imageIndex,
-                                                        $bootWimPath,
-                                                        $winREPath,
-                                                        $workingPath,
-                                                        $packagesPath,
-                                                        $newMediaPath,
-                                                        $capabilityList
+    $imageIndex,
+    $bootWimPath,
+    $winREPath,
+    $workingPath,
+    $packagesPath,
+    $newMediaPath,
+    $capabilityList
 
     $patchLPInstance = New-Object PatchLP -ArgumentList $dstInstallWimPath,
-                                                        $imageIndex,
-                                                        $bootWimPath,
-                                                        $winREPath,
-                                                        $workingPath,
-                                                        $packagesPath,
-                                                        $newMediaPath,
-                                                        $langList,
-                                                        $arch
+    $imageIndex,
+    $bootWimPath,
+    $winREPath,
+    $workingPath,
+    $packagesPath,
+    $newMediaPath,
+    $langList,
+    $arch
 
     if ( !($patchDUInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !($patchFODInstance.DoPatch())) { CleanupWhenFail; return }

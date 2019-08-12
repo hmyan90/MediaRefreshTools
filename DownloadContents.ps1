@@ -1,10 +1,10 @@
 # --------------------------------------------------------------
-#  Copyright © Microsoft Corporation.  All Rights Reserved.
+#  Copyright ï¿½ Microsoft Corporation.  All Rights Reserved.
 # ---------------------------------------------------------------
 
 <#
 .SYNOPSIS
-    PowerShell script for download Dynamic Update(DU) from [Microsoft®Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
+    PowerShell script for download Dynamic Update(DU) from [Microsoftï¿½Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
 
 .Description
     The scripts will create six sub folders under downloadPath specified in parameter for you:
@@ -14,9 +14,9 @@
 	    SetupDU/
 	    LP/
 	    FOD/
-	
+
 And the script will download latest SSU into SSU/, latest LCU into LCU/, latest SafeOS into SafeOS/, latest SetupDU into SetupDU/.
-Script won't download Language Packs and Feature On Demands ISO, so you need to download and put them into correspondding sub folder. 
+Script won't download Language Packs and Feature On Demands ISO, so you need to download and put them into correspondding sub folder.
 
 .PARAMETER downloadPath
     Specifies the path to store downloaded packages. This directory should be empty.
@@ -46,7 +46,7 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
 Param
 (
     [Parameter(Mandatory = $true, HelpMessage = "Specifies the path to store downloaded packages.")]
-    [ValidateScript({Test-Path $_ -PathType 'Container'})]
+    [ValidateScript( { Test-Path $_ -PathType 'Container' })]
     [string]$downloadPath,
 
     [Parameter(HelpMessage = "Specifies Windows platform")]
@@ -62,7 +62,7 @@ Param
     [string]$version = "1809",
 
     [Parameter(HelpMessage = "Specifies month of release of Dynamic Updates")]
-    [ValidateScript({[DateTime]::ParseExact($_, "yyyy-MM", $null)})]
+    [ValidateScript( { [DateTime]::ParseExact($_, "yyyy-MM", $null) })]
     [string]$releaseMonth = "2019-07",
 
     [Parameter(HelpMessage = "Show download links only")]
@@ -134,8 +134,8 @@ function CleanUpWhenSuccess {
 function Main {
     [cmdletbinding()]
     param()
-     
-    Out-Log "Enter DownloadContents execute" -level $([Constants]::LOG_DEBUG) 
+
+    Out-Log "Enter DownloadContents execute" -level $([Constants]::LOG_DEBUG)
     [string]$script:SSUPath = Join-Path $downloadPath $([Constants]::SSU_DIR)
     [string]$script:LCUPath = Join-Path $downloadPath $([Constants]::LCU_DIR)
     [string]$script:SafeOSPath = Join-Path $downloadPath $([Constants]::SAFEOS_DIR)
@@ -147,16 +147,16 @@ function Main {
     if ($createSubFolder -eq $false) { return }
 
     $downloadDUInstance = New-Object DownloadDU -ArgumentList $SSUPath,
-                                                              $LCUPath,
-                                                              $SafeOSPath,
-                                                              $SetupDUPath,
-                                                              $platform,
-                                                              $releaseMonth,
-                                                              $product,
-                                                              $version,
-                                                              $showLinksOnly,
-                                                              $forceSSL
-                                                              
+    $LCUPath,
+    $SafeOSPath,
+    $SetupDUPath,
+    $platform,
+    $releaseMonth,
+    $product,
+    $version,
+    $showLinksOnly,
+    $forceSSL
+
     if ( !($downloadDUInstance.DoDownload()) ) { CleanupWhenFail; return }
 
     CleanUpWhenSuccess
