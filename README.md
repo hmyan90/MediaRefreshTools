@@ -2,23 +2,29 @@ This README contains description of two executable scripts: DownloadContents.ps1
 
 # DownloadContents.ps1
 
-## Description 
-PowerShell script for download Dynamic Update(DU) from [Microsoft®Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
+## Requirements
+* This script uses PowerShell’s Invoke-WebRequest Cmdlet, this depends on Internet Explorer engine, so make sure you setup Internet Explorer properly.
 
-The scripts will create six sub folders under downloadPath specified in parameter for you: <br />
-	SSU/ <br />
-	LCU/ <br />
-	SafeOS/ <br />
-	SetupDU/ <br />
-	LP/ <br />
-	FOD/ <br />
-	
+## Description
+PowerShell script for download Dynamic Update(DU) from [Microsoft Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
+
+The scripts will create six sub folders under downloadPath specified in parameter for you:
+```
+downloadPath
+└───SSU
+└───LCU
+└───SafeOS
+└───SetupDU
+└───LP
+└───FOD
+```
+
 And the script will download latest SSU into SSU/, latest LCU into LCU/, latest SafeOS into SafeOS/, latest SetupDU into SetupDU/.
-Script won't download Language Packs and Feature On Demands ISO, so you need to download and put them into correspondding sub folder. 
+Script won't download Language Packs and Feature On Demands ISO, so you need to download and put them into correspondding sub folder.
 
 
-## Usage 
-.\DownloadContents.ps1 [-downloadPath] <String> [[-platform] <String>] [[-product] <String>] [[-version] <String>] 
+## Usage
+.\DownloadContents.ps1 [-downloadPath] <String> [[-platform] <String>] [[-product] <String>] [[-version] <String>]
     [[-releaseMonth] <String>] [-showLinksOnly] [[-logPath] <String>] [<CommonParameters>]
 
 -downloadPath <String>
@@ -41,7 +47,7 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
 
 -logPath
     Specifies the location of log file.
-	
+
 ## Example
 .\DownloadContents.ps1 -downloadPath .\downloads  -releaseMonth 2019-07
 
@@ -50,28 +56,28 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
 PowerShell script for refreshing Windows 10 Media with Dynamic Updates and adding additional Language Packs and Feature On Demands Offline.
 
 ## Preparation before running
-Before run the script, please download all dynamic update packages, Feature On Demand ISO, Language Pack ISO, 
+Before run the script, please download all dynamic update packages, Feature On Demand ISO, Language Pack ISO,
 and place them in directory $packagesPath before continue.
 * Download latest SSU package, e.g. windows10.0-kb4499728-x64.msu, put it in $packagesPath/SSU/windows10.0-kb4493510-x64.msu
 * Download latest LCU package, e.g. windows10.0-kb4497934-x64.msu, put it in $packagesPath/LCU/windows10.0-kb4497934-x64.msu
 * Download latest SafeOS package, e.g Windows10.0-KB4499728-x64.cab, put it in $packagesPath/SafeOS/Windows10.0-KB4499728-x64.cab
 * Download latest SetupDU package, e.g. Windows10.0-KB4499543-x64.cab, put it in $packagesPath/SetupDU/Windows10.0-KB4499728-x64.cab
-* Download OEM Feature On Demand ISO, e.g. 17763.1.180914-1434.rs5_release_amd64fre_FOD-PACKAGES_OEM_PT1_amd64fre_MULTI.iso, 
+* Download OEM Feature On Demand ISO, e.g. 17763.1.180914-1434.rs5_release_amd64fre_FOD-PACKAGES_OEM_PT1_amd64fre_MULTI.iso,
   and put it in $packagesPath/FOD/17763.1.180914-1434.rs5_release_amd64fre_FOD-PACKAGES_OEM_PT1_amd64fre_MULTI.iso
-* Download OEM Language Pack ISO, e.g. 17763.1.180914-1434.rs5_release_CLIENTLANGPACKDVD_OEM_MULTI.iso, 
+* Download OEM Language Pack ISO, e.g. 17763.1.180914-1434.rs5_release_CLIENTLANGPACKDVD_OEM_MULTI.iso,
   and put it in $packagesPath/LP/17763.1.180914-1434.rs5_release_CLIENTLANGPACKDVD_OEM_MULTI.iso
-  
-Or you can run DownloadContents.ps1, and download Feature On Demand ISO and OEM Language Pack ISO.
 
-## Description 
+Or you can run DownloadContents.ps1, then manually download Feature On Demand ISO and OEM Language Pack ISO.
+
+## Description
 The script will do the following four steps sequentially
 
 #### Preparation
 * Check input parameters and package layout are okay.
-* Check local environment has enough disk space for working. We need about 15GB. 
-* Export Winre.wim from install.wim 
+* Check local environment has enough disk space for working. We need about 15GB.
+* Export Winre.wim from install.wim
 
-#### Patch DU 
+#### Patch DU
 * Patch SSU, SafeOS and LCU to Windows Preinstallation environment
 * Patch SSU, SafeOS and LCU to Windows Setup environment
 * Patch SSU, SafeOS and LCU to Windows Recovery environment
@@ -83,40 +89,56 @@ The script will do the following four steps sequentially
 #### Patch LangPack
 * Add Language Packs to Windows Recovery environment
 * Add Recovery languages to Windows Main OS
+* Add Language Packs to Windows Setup
 
-## Usage 
+## Usage
 .\RefreshMedia.ps1 [-Media] <String> [-Index] <Int32> [-packagesPath] <String> [-Target] <String> [[-capabilityList] <String[]>] [[-langList] <String[]>] [[-logPath] <String>] [<CommonParameters>]
 
 -media <String>
     Specifies the location of media that needs to be refreshed.
-        
+
 -index <Int32>
-    Specifies the edition/index that need to build at last. We will only refresh this edition/index with DU contents, FoDs and 
+    Specifies the edition/index that need to build at last. We will only refresh this edition/index with DU contents, FoDs and
     LangPacks.
-    
+
 -packagesPath <String>
-    Specifies the location of all DUs, FoDs and LPs. This folder should contain below optional subdirectories: <br />
-		SSU/ <br />
-		LCU/ <br />
-		SafeOS/ <br />
-		SetupDU/ <br />
-		LP/ <br />
-		FOD/ <br />
-    
+    Specifies the location of all DUs, FoDs and LPs. This folder should contain below optional subdirectories:
+```
+packagesPath
+└───SSU
+└───LCU
+└───SafeOS
+└───SetupDU
+└───LP
+└───FOD
+```
+
 -target <String>
-    Specifies the location to store the refreshed media. This directory will also be used as working directory, 
+    Specifies the location to store the refreshed media. This directory will also be used as working directory,
     so initially script will check to make sure this directory is empty and there are enough space for working.
-    
+
 -capabilityList <String[]>
     Specifies which capabilities need to be installed.
-    
+
 -langList <String[]>
-    Specifies which languages need to be installed. This will search for Language Packs and Recovery Language. 
-    We will not support Language Interface Packs (LIPs) for this version.
-    
+    Specifies which languages need to be installed, not support Language Interface Packs (LIPs) for this version. This will add:
+* Language Packs for Windows Main OS
+* Recovery Language for Windows Recovery environment.
+* Language Packs for Windows Setup. You can use .PARAMETER winSetupLang to choose add or not for Windows Setup, default is not.
+
+-winSetupLang
+    Specifies whether to install language packages for Windows Setup
+
+-wimSize <Int32>
+    Specifies maximum size in MB for each of the split .swm files to be created. If install.wim does not exceed this size, won't split.
+    Default value is 32000MB.
+
+-cleanupImage
+    Specifies whether you need to cleanup image components. Usually it takes about 1hour to clean all .wim images. But this will also make the image small.
+
 -logPath <String>
     Specifies the location of log file.
 
 ## Example
-.\RefreshMedia.ps1 -media "E:\MediaRefreshTest\old media" -index 1 -packagesPath "E:\MediaRefreshTest\packages" -target "E:\MediaRefreshTest\new media" 
-                   -capabilityList "Language.Basic~~~fr-FR~0.0.1.0","Tools.DeveloperMode.Core~~~~0.0.1.0" -langList "fr-fr", "zh-cn"
+.\RefreshMedia.ps1 -media "E:\MediaRefreshTest\old media" -index 1 -packagesPath "E:\MediaRefreshTest\packages" -target "E:\MediaRefreshTest\new media"
+                   -capabilityList "Language.Basic~~~fr-FR~0.0.1.0", "Tools.DeveloperMode.Core~~~~0.0.1.0" -langList "fr-fr", "zh-cn"

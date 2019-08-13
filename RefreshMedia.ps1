@@ -32,20 +32,28 @@
         LP/
         FOD/
 
-.PARAMETER langList
-    Specifies which languages need to be installed. This will search for Language Packs and Recovery Language.
-    We will not support Language Interface Packs (LIPs) for this version.
-
-.PARAMETER capabilityList
-    Specifies which capabilities need to be installed.
-
 .PARAMETER target
     Specifies the location to store the refreshed media. This directory will also be used as working directory,
     so initially script will check to make sure this directory is empty and there are enough space for working.
 
+.PARAMETER langList
+    Specifies which languages need to be installed, not support Language Interface Packs (LIPs) for this version. This will add:
+        1) Language Packs for Main OS
+        2) Recovery Language for WinRE.
+        3) Language Packs for Windows Setup. You can use .PARAMETER winSetupLang to choose add or not for Windows Setup, default is not.
+
+.PARAMETER winSetupLang
+    Specifies whether to install language packages for Windows Setup
+
+.PARAMETER capabilityList
+    Specifies which capabilities need to be installed.
+
 .PARAMETER wimSize
     Specifies maximum size in MB for each of the split .swm files to be created. If install.wim does not exceed this size, won't split.
     Default value is 32000MB.
+
+.PARAMETER cleanupImage
+    Specifies whether you need to cleanup image components. Usually it takes about 1 hour to clean all .wim images. But this will also make the image small.
 
 .PARAMETER logPath
     Specifies the location of log file.
@@ -66,14 +74,37 @@
 
 Param
 (
-    [Parameter(Mandatory = $true, HelpMessage = "Specifies the path to original media directory.")][string]$media,
-    [Parameter(Mandatory = $true, HelpMessage = "Specifies the Image Index that needs to be refresh.")][ValidateRange(1, 11)][int]$index = 1,
-    [Parameter(Mandatory = $true, HelpMessage = "Specifies downloaded packages path")][string]$packagesPath,
-    [Parameter(Mandatory = $true, HelpMessage = "Specifies the path to store destination media")][string]$target,
-    [Parameter(HelpMessage = "Specifies list of capabilities you want to add")][string[]]$capabilityList,
-    [Parameter(HelpMessage = "Specifies list of languages you want to add")][string[]]$langList,
-    [Parameter(HelpMessage = "Specifies maximum size in MB for each of the split .swm files to be created.")][ValidateRange(1, 32000)][int]$wimSize = 32000,
-    [Parameter(HelpMessage = "Specifies the location of log file")][string]$logPath = "$PSScriptRoot\refresh_media.log")
+    [Parameter(Mandatory = $true, HelpMessage = "Specifies the path to original media directory.")]
+    [string]$media,
+
+    [Parameter(Mandatory = $true, HelpMessage = "Specifies the Image Index that needs to be refresh.")]
+    [ValidateRange(1, 11)][int]$index = 1,
+
+    [Parameter(Mandatory = $true, HelpMessage = "Specifies downloaded packages path")]
+    [string]$packagesPath,
+
+    [Parameter(Mandatory = $true, HelpMessage = "Specifies the path to store destination media")]
+    [string]$target,
+
+    [Parameter(HelpMessage = "Specifies list of capabilities you want to add")]
+    [string[]]$capabilityList,
+
+    [Parameter(HelpMessage = "Specifies list of languages you want to add")]
+    [string[]]$langList,
+
+    [Parameter(HelpMessage = "Specifies whether to install language packages for Windows Setup")]
+    [switch]$winSetupLang = $false,
+
+    [Parameter(HelpMessage = "Specifies whether to cleanup image components")]
+    [switch]$cleanupImage = $true,
+
+    [Parameter(HelpMessage = "Specifies maximum size in MB for each of the split .swm files to be created.")]
+    [ValidateRange(1, 32000)]
+    [int]$wimSize = 32000,
+
+    [Parameter(HelpMessage = "Specifies the location of log file")]
+    [string]$logPath = "$PSScriptRoot\refresh_media.log"
+)
 
 [string]$global:logPath = $logPath
 [string]$oldMediaPath = $media
@@ -278,7 +309,9 @@ function CleanAndAssembleMedia {
         # Cleanup Winre.wim
         Out-Log "Cleanup winre.wim " -level $([Constants]::LOG_DEBUG)
         Mount-Image $winREPath 1 $winREMountPoint
-        Restore-Image $winREMountPoint # cleanup install.wim here
+        if ($cleanupImage) {
+            Restore-Image $winREMountPoint # cleanup install.wim here
+        }
         Dismount-CommitImage $winREMountPoint
 
         $newTmpWinREPath = Join-Path $workingPath "winre2.wim"
@@ -289,7 +322,9 @@ function CleanAndAssembleMedia {
         Out-Log "Cleanup install.wim " -level $([Constants]::LOG_DEBUG)
         Mount-Image $installWimPath $imageIndex $installMountPoint
         Copy-Files $WinREPath "$installMountPoint\windows\system32\recovery\winre.wim"
-        Restore-Image $installMountPoint # cleanup install.wim here
+        if ($cleanupImage) {
+            Restore-Image $installMountPoint # cleanup install.wim here
+        }
         Dismount-CommitImage $installMountPoint
 
         $newTmpInstallWimPath = Join-Path $newMediaPath "sources/install2.wim"
@@ -300,7 +335,9 @@ function CleanAndAssembleMedia {
         Out-Log "Cleanup boot.wim " -level $([Constants]::LOG_DEBUG)
         For ($index = 1; $index -le 2; $index++) {
             Mount-Image $bootWimPath $index $winPEMountPoint
-            Restore-Image $winPEMountPoint
+            if ($cleanupImage) {
+                Restore-Image $winPEMountPoint
+            }
             Dismount-CommitImage $winPEMountPoint
         }
 
@@ -442,7 +479,8 @@ function Main {
     $packagesPath,
     $newMediaPath,
     $langList,
-    $arch
+    $arch,
+    $winSetupLang
 
     if ( !($patchDUInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !($patchFODInstance.DoPatch())) { CleanupWhenFail; return }

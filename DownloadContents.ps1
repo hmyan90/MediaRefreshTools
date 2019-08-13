@@ -1,10 +1,10 @@
 # --------------------------------------------------------------
-#  Copyright � Microsoft Corporation.  All Rights Reserved.
+#  Copyright © Microsoft Corporation.  All Rights Reserved.
 # ---------------------------------------------------------------
 
 <#
 .SYNOPSIS
-    PowerShell script for download Dynamic Update(DU) from [Microsoft�Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
+    PowerShell script for download Dynamic Update(DU) from [Microsoft Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
 
 .Description
     The scripts will create six sub folders under downloadPath specified in parameter for you:

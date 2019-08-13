@@ -62,15 +62,17 @@ class PatchLP: PatchMedia {
     [string]$LPISOPath
     [string[]]$langList
     [string]$arch
+    [switch]$winSetupLang
     [string]$mainOSLangPackPath
     [string]$WinPEOCPath
 
     PatchLP([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
-        [string]$newMediaPath, [string[]]$langList, [string]$arch): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath,
+        [string]$newMediaPath, [string[]]$langList, [string]$arch, [switch]$winSetupLang): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath,
         $packagesPath, $newMediaPath) {
         $this.LPISOPath = [PatchLP]::GetLPISOPath($packagesPath)
         $this.langList = $langList
         $this.arch = $arch
+        $this.winSetupLang = $winSetupLang
     }
 
     [bool]TestNeedPatch() {
@@ -102,9 +104,6 @@ class PatchLP: PatchMedia {
 
         return $True
     }
-
-    <#
-    # Not sure about LangPack request of boot.wim, comment for now.
 
     AddLPToWinSetup($mountPoint) {
 
@@ -181,8 +180,23 @@ class PatchLP: PatchMedia {
         }
     }
 
+    GenLangIni($mountPoint, $envName) {
+
+        try {
+            dism /image:$mountPoint /Gen-LangINI /distribution:$mountPoint | Out-Null
+        }
+        catch {
+            Out-Log "Failed to Gen-LangINI for $envName" -level $([Constants]::LOG_WARNING)
+        }
+    }
+
+
     [bool]PatchWinSetup() {
         # Follow the documentation: https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/add-multilingual-support-to-windows-setup
+
+        if (-not $this.winSetupLang) {
+            return $true
+        }
 
         $mountPoint = Join-Path $this.workingPath $([Constants]::WIN_SETUP_MOUNT)
         $envName = [Constants]::WIN_SETUP
@@ -194,6 +208,7 @@ class PatchLP: PatchMedia {
             $this.AddFontSupportToWinSetup($mountPoint)
             $this.AddTTSToWinSetup($mountPoint)
             $this.AddLPToWinSetup($mountPoint)
+            $this.GenLangIni($mountPoint, $envName)
 
             Out-Log "Dismount Image $mountPoint and commit changes" -level $([Constants]::LOG_DEBUG)
             Dismount-CommitImage $mountPoint
@@ -212,7 +227,6 @@ class PatchLP: PatchMedia {
             return $False
         }
     }
-    #>
 
 
     [bool]PatchWinRE() {
