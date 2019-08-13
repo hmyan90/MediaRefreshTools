@@ -141,7 +141,7 @@ function CheckFreeSpace {
     Out-log "Current disk $currentDrive free space is: $freeSizeMB MB. Needed working disk space is: $needSizeMB MB"
 
     if ($needSizeMB -gt $freeSizeMB) {
-        Out-log "No enough disk space. Please specifies another disk for Target store." -level $([Constants]::LOG_ERROR)
+        Out-log "No enough disk space. Please specify another disk for Target store." -level $([Constants]::LOG_ERROR)
         return $False
     }
     else {

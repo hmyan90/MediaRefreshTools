@@ -3,7 +3,7 @@ This README contains description of two executable scripts: DownloadContents.ps1
 # DownloadContents.ps1
 
 ## Requirements
-* This script uses PowerShell’s Invoke-WebRequest Cmdlet, this depends on Internet Explorer engine, so make sure you setup Internet Explorer properly.
+* This script uses PowerShell Invoke-WebRequest Cmdlet, this depends on Internet Explorer engine, so make sure you setup Internet Explorer properly.
 
 ## Description
 PowerShell script for download Dynamic Update(DU) from [Microsoft Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
@@ -49,7 +49,7 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
     Specifies the location of log file.
 
 ## Example
-.\DownloadContents.ps1 -downloadPath .\downloads  -releaseMonth 2019-07
+.\DownloadContents.ps1 -downloadPath .\downloads -releaseMonth 2019-07
 
 
 # RefreshMedia.ps1
@@ -87,12 +87,16 @@ The script will do the following four steps sequentially
 * Add capabilities to Windows Main OS
 
 #### Patch LangPack
-* Add Language Packs to Windows Recovery environment
-* Add Recovery languages to Windows Main OS
-* Add Language Packs to Windows Setup
+* Add Recovery languages to Windows Main OS (install.wim)
+* Add Language Packs to Windows Recovery Environment (winre.wim in install.wim)
+* Add Language Packs to Windows Setup Environment (boot image index 2)
+* Notice the script won't add localized Windows Setup resources to the Windows installation media, 
+if you want to do this, you need to manually copy the language-specific Setup resources from each language-specific
+ Windows distribution to the Sources folder in your Windows distribution. 
 
 ## Usage
-.\RefreshMedia.ps1 [-Media] <String> [-Index] <Int32> [-packagesPath] <String> [-Target] <String> [[-capabilityList] <String[]>] [[-langList] <String[]>] [[-logPath] <String>] [<CommonParameters>]
+.\RefreshMedia.ps1  [-media] <String> [-index] <Int32> [-packagesPath] <String> [-target] <String> [[-capabilityList] <String[]>] 
+    [[-langList] <String[]>] [-winSetupLang] [-cleanupImage] [[-wimSize] <Int32>] [[-logPath] <String>] [<CommonParameters>]
 
 -media <String>
     Specifies the location of media that needs to be refreshed.
@@ -123,7 +127,7 @@ packagesPath
 -langList <String[]>
     Specifies which languages need to be installed, not support Language Interface Packs (LIPs) for this version. This will add:
 * Language Packs for Windows Main OS
-* Recovery Language for Windows Recovery environment.
+* Recovery Language for Windows Recovery Environment.
 * Language Packs for Windows Setup. You can use .PARAMETER winSetupLang to choose add or not for Windows Setup, default is not.
 
 -winSetupLang
