@@ -158,12 +158,12 @@ function CheckParameters {
 
     # Check essential folders exist
     if ( !(Test-FolderExist $oldMediaPath) ) {
-        Out-Log "$oldMediaPath does not exist." $([Constants]::LOG_ERROR)
+        Out-Log "$oldMediaPath does not exist." -level $([Constants]::LOG_ERROR)
         return $False
     }
 
     if ( !(Test-FolderExist $newMediaPath) ) {
-        Out-Log "$newMediaPath does not exist." $([Constants]::LOG_ERROR)
+        Out-Log "$newMediaPath does not exist." -level $([Constants]::LOG_ERROR)
         return $False
     }
     else {
@@ -174,7 +174,7 @@ function CheckParameters {
     }
 
     if ( !(Test-FolderExist $packagesPath) ) {
-        Out-Log "$packagesPath does not exist." $([Constants]::LOG_ERROR)
+        Out-Log "$packagesPath does not exist." -level $([Constants]::LOG_ERROR)
         return $False
     }
 
@@ -384,7 +384,16 @@ function SplitInstallWim {
         # won't treat this as fatal error
         Out-Log "Failed to split install.wim. Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
     }
+}
 
+function RemoveFilesReadOnlyAttr {
+    [cmdletbinding()]
+    param([string]$path)
+
+    Get-ChildItem -Path $path -Recurse | Where-Object { -not $_.PSIsContainer -and $_.IsReadOnly } |
+    ForEach-Object {
+        $_.IsReadOnly = $false
+    }
 }
 
 function CleanUpWhenSuccess {
@@ -435,12 +444,19 @@ function Main {
         Out-Log "Get media architecture is: $arch"
     }
 
+    $bootWimPath = Join-Path $newMediaPath $([Constants]::BOOT_WIM_PATH)
+    $dstInstallWimPath = Join-Path $newMediaPath $([Constants]::INSTALL_WIM_PATH)
+
     try {
         # Setup working directory
         Add-Folder $workingPath
 
         # Copy old Media files into new Media
+        Out-Log "Copy media from $oldMediaPath to $newMediaPath, this might take a while if you copy from ISO."
         Copy-Files $oldMediaPath\* $newMediaPath
+
+        # Check .wim file read-only
+        RemoveFilesReadOnlyAttr $newMediaPath
     }
     catch {
         Out-Log $_.Exception.Message -level $([Constants]::LOG_ERROR)
@@ -448,11 +464,8 @@ function Main {
         return
     }
 
-    $winREPath = (GetWinREFromInstallWim $origInstallWimPath)
+    $winREPath = (GetWinREFromInstallWim $dstInstallWimPath)
     if ( !$winREPath) { return }
-
-    $bootWimPath = Join-Path $newMediaPath $([Constants]::BOOT_WIM_PATH)
-    $dstInstallWimPath = Join-Path $newMediaPath $([Constants]::INSTALL_WIM_PATH)
 
     $patchDUInstance = New-Object PatchDU -ArgumentList $dstInstallWimPath,
     $imageIndex,

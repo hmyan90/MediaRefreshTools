@@ -1,4 +1,4 @@
-# --------------------------------------------------------------
+﻿# --------------------------------------------------------------
 #  Copyright © Microsoft Corporation.  All Rights Reserved.
 # ---------------------------------------------------------------
 
@@ -15,8 +15,8 @@
 	    LP/
 	    FOD/
 
-And the script will download latest SSU into SSU/, latest LCU into LCU/, latest SafeOS into SafeOS/, latest SetupDU into SetupDU/.
-Script won't download Language Packs and Feature On Demands ISO, so you need to download and put them into correspondding sub folder.
+    Then the script will download latest SSU into SSU/, latest LCU into LCU/, latest SafeOS into SafeOS/, latest SetupDU into SetupDU/.
+    Script won't download Language Packs and Feature On Demands ISO, so you need to download and put them into correspondding sub folder.
 
 .PARAMETER downloadPath
     Specifies the path to store downloaded packages. This directory should be empty.
@@ -25,19 +25,22 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
     Specifies for which platform you need to download dynamic update.
 
 .PARAMETER product
-    Specifies for Windows product you need to download dynamic update.
+    Specifies for Windows product you need to download dynamic update. Only support "Windows 10" for now.
 
 .PARAMETER version
-    Specifies for Windows version you need to download dynamic update.
+    Specifies for Windows Media version you need to download dynamic update. Default value is "1809".
 
-.PARAMETER releaseMonth
-    Specifies month of release of Dynamic Updates, it should be current month if you want to get latest DU.
+.PARAMETER duReleaseMonth
+    Specifies month of release of Dynamic Updates, it should be current month if you want to get latest DU. Default value is current month.
 
 .PARAMETER showLinksOnly
     Specifies you only want to see download links of DU, but won't actually download them.
 
 .PARAMETER logPath
     Specifies the location of log file.
+
+.Example
+    .\DownloadContents.ps1 -downloadPath .\downloads -version 2019-06 -duReleaseMonth 1809
 
 #>
 
@@ -57,18 +60,18 @@ Param
     [ValidateSet("windows 10")]
     [string]$product = "windows 10",
 
-    [Parameter(HelpMessage = "Specifies Windows version")]
+    [Parameter(HelpMessage = "Specifies Windows Media version")]
     [ValidateSet("1809", "1903")]
     [string]$version = "1809",
 
     [Parameter(HelpMessage = "Specifies month of release of Dynamic Updates")]
     [ValidateScript( { [DateTime]::ParseExact($_, "yyyy-MM", $null) })]
-    [string]$releaseMonth = "2019-07",
+    [string]$duReleaseMonth = ("{0:d4}-{1:d2}" -f (Get-Date).Year, (Get-Date).Month),
 
     [Parameter(HelpMessage = "Show download links only")]
     [switch]$showLinksOnly,
 
-    [Parameter(HelpMessage = "Use https to download")]
+    [Parameter(DontShow, HelpMessage = "Download files through HTTPS")]
     [switch]$forceSSL,
 
     [Parameter(HelpMessage = "Specifies the location of log file")]
@@ -151,7 +154,7 @@ function Main {
     $SafeOSPath,
     $SetupDUPath,
     $platform,
-    $releaseMonth,
+    $duReleaseMonth,
     $product,
     $version,
     $showLinksOnly,

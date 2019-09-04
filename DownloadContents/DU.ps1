@@ -7,12 +7,13 @@ class DownloadDU: DownloadContents {
 
     [string]$searchPageTemplate = 'https://www.catalog.update.microsoft.com/Search.aspx?q={0}'
     [string]$downloadURL = 'http://www.catalog.update.microsoft.com/DownloadDialog.aspx'
+    [int]$maxTryMonth = 12
     [string]$SSUPath
     [string]$LCUPath
     [string]$SafeOSPath
     [string]$SetupDUPath
     [string]$platform
-    [string]$releaseMonth
+    [string]$duReleaseMonth
     [string]$product
     [string]$version
     [switch]$showLinksOnly
@@ -20,20 +21,20 @@ class DownloadDU: DownloadContents {
     $DUInfoMapping
 
     DownloadDU([string]$SSUPath, [string]$LCUPath, [string]$SafeOSPath, [string]$SetupDUPath,
-        [string]$platform, [string]$releaseMonth, [string]$product, [string]$version,
+        [string]$platform, [string]$duReleaseMonth, [string]$product, [string]$version,
         [switch]$showLinksOnly, [switch]$forceSSL): base($platform, $product, $version, $showLinksOnly) {
         $this.SSUPath = $SSUPath
         $this.LCUPath = $LCUPath
         $this.SafeOSPath = $SafeOSPath
         $this.SetupDUPath = $SetupDUPath
-        $this.releaseMonth = $releaseMonth
+        $this.duReleaseMonth = $duReleaseMonth
         $this.forceSSL = $forceSSL
         $this.DUInfoMapping = @{
-            [DUType]::SSU     = @{name = "Servicing Stack Update"; path = $SSUPath };
-            [DUType]::LCU     = @{name = "Cumulative Update"; path = $LCUPath };
+            [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $SSUPath; products = "Safe OS Dynamic Update" };
+            [DUType]::LCU     = @{title = "Cumulative Update"; path = $LCUPath };
             # TODO, Catelog have not publish SafeOS, change later
-            [DUType]::SafeOS  = @{name = "SafeOS Update"; path = $SafeOSPath };
-            [DUType]::SetupDU = @{name = "Dynamic Update"; path = $SetupDUPath };
+            [DUType]::SafeOS  = @{title = "Dynamic Update"; path = $SafeOSPath };
+            [DUType]::SetupDU = @{title = "Dynamic Update"; path = $SetupDUPath };
         }
     }
 
@@ -62,7 +63,7 @@ class DownloadDU: DownloadContents {
     [string]RewriteURL([string]$url) {
 
         if ($this.forceSSL) {
-            if ($url -match '^https*:\/\/(.+)$') {
+            if ($url -match '^https?:\/\/(.+)$') {
                 return 'https://{0}' -f $Matches[1]
             }
             else {
@@ -89,7 +90,6 @@ class DownloadDU: DownloadContents {
             Out-Log "Failed to get download link for $DUType" -level $([Constants]::LOG_ERROR)
             return @()
         }
-
 
         if (-not $links) {
             Out-Log "No download link available for $DUType" -level $([Constants]::LOG_ERROR)
@@ -164,6 +164,7 @@ class DownloadDU: DownloadContents {
 
         # Finding a column where update title and ID are stored.
         $titleColumnNumber = $this.FindTableColumnNumber($columns, '*<SPAN>Title</SPAN>*')
+
         if (($dateColumnNumber -eq $columns.count) -Or ($titleColumnNumber -eq $columns.count) ) {
             Out-Log "dateColumnNumber = $dateColumnNumber; titleColumnNumber = $titleColumnNumber for $DUType" -level $([Constants]::LOG_DEBUG)
             Out-Log "No $DUType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
@@ -176,12 +177,12 @@ class DownloadDU: DownloadContents {
             # Here we are looking for a row with the most recent release date.
             if ($Row.getElementsByTagName('td')[$titleColumnNumber].innerHTML -match 'goToDetails\("(.+)"\);') {
                 # goToDetails contains update's GUID which we use then to request an update download page.
-                $tmpGuid = $matches[1]
-                $tmpDate = [datetime]::ParseExact($Row.getElementsByTagName('td')[$dateColumnNumber].innerHTML.Trim(), 'd', $null)
-                if ($releaseDate -lt $tmpDate) {
+                $curGuid = $matches[1]
+                $curDate = [datetime]::ParseExact($Row.getElementsByTagName('td')[$dateColumnNumber].innerHTML.Trim(), 'd', $null)
+                if ($releaseDate -lt $curDate) {
                     # We assume that MS never publishes several versions of an update on the same day.
-                    $releaseDate = $tmpDate
-                    $GUID = $tmpGuid
+                    $releaseDate = $curDate
+                    $GUID = $curGuid
                 }
             }
         }
@@ -189,7 +190,6 @@ class DownloadDU: DownloadContents {
         Out-Log "getLatestGUID = $GUID for $DUType" -level $([Constants]::LOG_DEBUG)
         return $GUID
     }
-
 
     [bool]DownloadByTypeAndDate([DUType]$DUType, [string]$curYearMonth) {
 
@@ -223,9 +223,13 @@ class DownloadDU: DownloadContents {
 
     [bool]DownloadByType([DUType]$DUType) {
 
-        $curDate = [DateTime]::ParseExact($this.releaseMonth, "yyyy-MM", $null)
+        if ( ($DUType -ne [DUType]::SSU) -and ($DUType -ne [DUType]::LCU) -and ($DUType -ne [DUType]::SafeOS) -and ($DUType -ne [DUType]::SetupDU)) {
+            return $false
+        }
 
-        For ($i = 0; $i -le 10; $i++) {
+        $curDate = [DateTime]::ParseExact($this.duReleaseMonth, "yyyy-MM", $null)
+
+        For ($i = 0; $i -le $this.maxTryMonth; $i++) {
             $curYearMonth = ("{0:d4}-{1:d2}" -f $curDate.Year, $curDate.Month)
             if ($this.DownloadByTypeAndDate($DUType, $curYearMonth) -eq $true) {
                 return $true
@@ -236,10 +240,13 @@ class DownloadDU: DownloadContents {
     }
 
     [bool]Download() {
-        [enum]::getvalues([type]"DUType") |
+
+        [enum]::GetNames([DUType]) |
 
         ForEach-Object {
-            $this.DownloadByType($_)
+            if ($_ -ne [DUType]::Unknown) {
+                $this.DownloadByType($_)
+            }
         }
 
         return $true

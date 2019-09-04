@@ -2,8 +2,11 @@ This README contains description of two executable scripts: DownloadContents.ps1
 
 # DownloadContents.ps1
 
-## Requirements
+## Announcement
 * This script uses PowerShell Invoke-WebRequest Cmdlet, this depends on Internet Explorer engine, so make sure you setup Internet Explorer properly.
+* This script parses html of [Microsoft Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx). If this website changes, this script may or may not be effected.
+* This script refers some online resources: https://github.com/exchange12rocks/WU/blob/master/Get-WUFilebyID/Get-WUFileByID.ps1
+
 
 ## Description
 PowerShell script for download Dynamic Update(DU) from [Microsoft Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
@@ -25,7 +28,7 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
 
 ## Usage
 .\DownloadContents.ps1 [-downloadPath] <String> [[-platform] <String>] [[-product] <String>] [[-version] <String>]
-    [[-releaseMonth] <String>] [-showLinksOnly] [[-logPath] <String>] [<CommonParameters>]
+    [[-duReleaseMonth] <String>] [-showLinksOnly] [[-logPath] <String>] [<CommonParameters>]
 
 -downloadPath <String>
     Specifies the path to store downloaded packages. This directory should be empty. The scripts will create six sub folders under this directory.
@@ -34,13 +37,13 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
     Specifies for which platform you need to download dynamic update.
 
 -product <String>
-    Specifies for Windows product you need to download dynamic update.
+    Specifies for Windows product you need to download dynamic update. Only support "Windows 10" for now.
 
 -version <String>
-    Specifies for Windows version you need to download dynamic update.
+    Specifies for Windows Media version you need to download dynamic update. Default value is "1809".
 
--releaseMonth <String>
-    Specifies month of release of Dynamic Updates, it should be current month if you want to get latest DU.
+-duReleaseMonth <String>
+    Specifies month of release of Dynamic Updates, it should be current month if you want to get latest DU. Default value is current month.
 
 -showLinksOnly
     Specifies you only want to see download links of DU, but won't actually download them.
@@ -49,7 +52,8 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
     Specifies the location of log file.
 
 ## Example
-.\DownloadContents.ps1 -downloadPath .\downloads -releaseMonth 2019-07
+.\DownloadContents.ps1 -downloadPath .\downloads
+.\DownloadContents.ps1 -downloadPath .\downloads -version 2019-06 -duReleaseMonth 1809
 
 
 # RefreshMedia.ps1
@@ -90,12 +94,12 @@ The script will do the following four steps sequentially
 * Add Recovery languages to Windows Main OS (install.wim)
 * Add Language Packs to Windows Recovery Environment (winre.wim in install.wim)
 * Add Language Packs to Windows Setup Environment (boot image index 2)
-* Notice the script won't add localized Windows Setup resources to the Windows installation media, 
+* Notice the script won't add localized Windows Setup resources to the Windows installation media,
 if you want to do this, you need to manually copy the language-specific Setup resources from each language-specific
- Windows distribution to the Sources folder in your Windows distribution. 
+ Windows distribution to the Sources folder in your Windows distribution.
 
 ## Usage
-.\RefreshMedia.ps1  [-media] <String> [-index] <Int32> [-packagesPath] <String> [-target] <String> [[-capabilityList] <String[]>] 
+.\RefreshMedia.ps1  [-media] <String> [-index] <Int32> [-packagesPath] <String> [-target] <String> [[-capabilityList] <String[]>]
     [[-langList] <String[]>] [-winSetupLang] [-cleanupImage] [[-wimSize] <Int32>] [[-logPath] <String>] [<CommonParameters>]
 
 -media <String>

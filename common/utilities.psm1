@@ -4,8 +4,8 @@
 
 Set-StrictMode -Version Latest;
 
-enum DUType
-{
+Enum DUType {
+    Unknown = 0
     SSU = 1
     LCU = 2
     SafeOS = 3
@@ -210,13 +210,17 @@ function Get-Architecture {
         $info = Get-WindowsImage -ImagePath $imagePath -Index 1 -ErrorAction stop
         if ($info.Architecture -eq 0) {
             $arch = [Constants]::ARCH_X86
-        } elseif ($info.Architecture -eq 5) {
+        }
+        elseif ($info.Architecture -eq 5) {
             $arch = [Constants]::ARCH_ARM
-        } elseif ($info.Architecture -eq 9) {
+        }
+        elseif ($info.Architecture -eq 9) {
             $arch = [Constants]::ARCH_X64
-        } elseif ($info.Architecture -eq 12) {
-            $arch =[Constants]::ARCH_ARM64
-        } else {
+        }
+        elseif ($info.Architecture -eq 12) {
+            $arch = [Constants]::ARCH_ARM64
+        }
+        else {
             $arch = [Constants]::ARCH_UNKNOWN
         }
     }
@@ -269,7 +273,7 @@ function Split-Image {
 function Get-ImageName {
     [cmdletbinding()]
     param([string]$imagePath,
-          [int]$index)
+        [int]$index)
 
     $info = Get-WindowsImage -ImagePath $imagePath -Index $index -ErrorAction stop
     return $info.ImageName
@@ -427,7 +431,7 @@ class DownloadContents {
         return $true
     }
 
-    [bool]download() {
+    [bool]Download() {
         return $true
     }
 
@@ -438,7 +442,7 @@ class DownloadContents {
     [bool]DoDownload() {
 
         if (!($this.Initialize())) { return $False }
-        if (!($this.download())) { return $False }
+        if (!($this.Download())) { return $False }
         $this.Cleanup()
 
         return $true
