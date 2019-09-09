@@ -30,9 +30,9 @@ class DownloadDU: DownloadContents {
         $this.duReleaseMonth = $duReleaseMonth
         $this.forceSSL = $forceSSL
         $this.DUInfoMapping = @{
-            [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $SSUPath; products = "Safe OS Dynamic Update" };
+            [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $SSUPath};
             [DUType]::LCU     = @{title = "Cumulative Update"; path = $LCUPath };
-            # TODO, Catelog have not publish SafeOS, change later
+            # TODO, solve differentiate SafeOS and Setup DU
             [DUType]::SafeOS  = @{title = "Dynamic Update"; path = $SafeOSPath };
             [DUType]::SetupDU = @{title = "Dynamic Update"; path = $SetupDUPath };
         }

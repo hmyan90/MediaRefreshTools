@@ -103,7 +103,8 @@ if you want to do this, you need to manually copy the language-specific Setup re
     [[-langList] <String[]>] [-winSetupLang] [-cleanupImage] [[-wimSize] <Int32>] [[-logPath] <String>] [<CommonParameters>]
 
 -media <String>
-    Specifies the location of media that needs to be refreshed.
+    Specifies the location of media that needs to be refreshed. You can copy RTM Media to local and specify local path,
+    or mount RTM ISO Media and specify mount path.
 
 -index <Int32>
     Specifies the edition/index that need to build at last. We will only refresh this edition/index with DU contents, FoDs and

@@ -18,7 +18,8 @@
                 and put it in $packagesPath/LP/17763.1.180914-1434.rs5_release_CLIENTLANGPACKDVD_OEM_MULTI.iso
 
 .PARAMETER media
-    Specifies the location of media that needs to be refreshed.
+    Specifies the location of media that needs to be refreshed. You can copy RTM Media to local and specify local path,
+    or mount RTM ISO Media and specify mount path.
 
 .PARAMETER index
     Specifies the edition/index that need to build at last. We will only refresh this edition/index with DU contents, FoDs and LangPacks.
@@ -134,7 +135,7 @@ function CheckFreeSpace {
         [int]$freeSizeMB = [System.Math]::Floor((Get-WmiObject -Class Win32_Volume -Filter "DriveLetter = '$currentDrive'").FreeSpace / 1MB)
     }
     catch {
-        Out-Log "Failed to get current disk free space." $([Constants]::LOG_ERROR)
+        Out-Log "Failed to get current disk free space." -level $([Constants]::LOG_ERROR)
         return $False
     }
 
@@ -168,13 +169,20 @@ function CheckParameters {
     }
     else {
         if ( !(Test-FolderEmpty $newMediaPath) ) {
-            Out-Log "$newMediaPath is not empty. Please specify an empty directory." $([Constants]::LOG_ERROR)
+            Out-Log "$newMediaPath is not empty. Please specify an empty directory." -level $([Constants]::LOG_ERROR)
             return $False
         }
     }
 
     if ( !(Test-FolderExist $packagesPath) ) {
         Out-Log "$packagesPath does not exist." -level $([Constants]::LOG_ERROR)
+        return $False
+    }
+
+    # Check <= 1 SetupDU exist
+    $setupDUPath = Join-Path $packagesPath $([Constants]::SETUPDU_DIR)
+    if ( (Test-Path $setupDUPath) -and ((Get-ChildItem -Path $setupDUPath).Count -gt 1) ) {
+        Out-Log "Please only place one Setup DU in $setupDUPath." -level $([Constants]::LOG_ERROR)
         return $False
     }
 
@@ -455,7 +463,7 @@ function Main {
         Out-Log "Copy media from $oldMediaPath to $newMediaPath, this might take a while if you copy from ISO."
         Copy-Files $oldMediaPath\* $newMediaPath
 
-        # Check .wim file read-only
+        # Check and remove media files read-only
         RemoveFilesReadOnlyAttr $newMediaPath
     }
     catch {
@@ -467,7 +475,7 @@ function Main {
     $winREPath = (GetWinREFromInstallWim $dstInstallWimPath)
     if ( !$winREPath) { return }
 
-    $patchDUInstance = New-Object PatchDU -ArgumentList $dstInstallWimPath,
+    $patchDUExcludeLCUInstance = New-Object PatchDUExcludeLCU -ArgumentList $dstInstallWimPath,
     $imageIndex,
     $bootWimPath,
     $winREPath,
@@ -495,9 +503,18 @@ function Main {
     $arch,
     $winSetupLang
 
-    if ( !($patchDUInstance.DoPatch())) { CleanupWhenFail; return }
+    $patchLCUInstance = New-Object PatchLCU -ArgumentList $dstInstallWimPath,
+    $imageIndex,
+    $bootWimPath,
+    $winREPath,
+    $workingPath,
+    $packagesPath,
+    $newMediaPath
+
+    if ( !($patchDUExcludeLCUInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !($patchFODInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !($patchLPInstance.DoPatch())) { CleanupWhenFail; return }
+    if ( !($patchLCUInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !(CleanAndAssembleMedia $dstInstallWimPath $winREPath $bootWimPath) ) { CleanupWhenFail; return }
     SplitInstallWim $dstInstallWimPath $wimSize
 
