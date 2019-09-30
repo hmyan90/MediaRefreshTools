@@ -5,10 +5,10 @@
 class PatchDU: PatchMedia {
 
     static $DUInfoMapping = @{
-        [DUType]::SSU     = @{name = "SSU"};
-        [DUType]::LCU     = @{name = "LCU"};
-        [DUType]::SafeOS  = @{name = "SafeOS DU"};
-        [DUType]::SetupDU = @{name = "SetupDU"};
+        [DUType]::SSU     = @{name = "SSU" };
+        [DUType]::LCU     = @{name = "LCU" };
+        [DUType]::SafeOS  = @{name = "SafeOS DU" };
+        [DUType]::SetupDU = @{name = "SetupDU" };
     }
 
     PatchDU ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
@@ -19,10 +19,10 @@ class PatchDU: PatchMedia {
         if (Test-Path $Path) {
             Get-ChildItem -Path $Path\* -Include *.msu, *cab |
 
-            Foreach-Object {
-                Out-Log ("Install $( [PatchDU]::DUInfoMapping.$DUType.name ) $( $_.Name ) to $envName")
-                Install-Package $imagePath ($_.FullName)
-            }
+                Foreach-Object {
+                    Out-Log ("Install $( [PatchDU]::DUInfoMapping.$DUType.name ) $( $_.Name ) to $envName")
+                    Install-Package $imagePath ($_.FullName)
+                }
         }
     }
 

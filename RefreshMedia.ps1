@@ -241,7 +241,7 @@ function CheckParameters {
         else {
             $arch = Get-Architecture($origInstallWimPath)
             if ( $arch -eq $([Constants]::ARCH_UNKNOWN) ) {
-                Out-Log "Image $imagePath architecture is: $arch" -level $([Constants]::LOG_ERROR)
+                Out-Log "Image $origInstallWimPath architecture is: $origInstallWimPath" -level $([Constants]::LOG_ERROR)
                 return $False
             }
             $isLangInputValid = (Test-LangInput $arch $fullNames $langList)
@@ -445,7 +445,7 @@ function Main {
     $origInstallWimPath = Join-Path $oldMediaPath $([Constants]::INSTALL_WIM_PATH)
     [string]$script:arch = Get-Architecture($origInstallWimPath)
     if ( $arch -eq $([Constants]::ARCH_UNKNOWN) ) {
-        Out-Log "Image $imagePath architecture is: $arch" -level $([Constants]::LOG_ERROR)
+        Out-Log "Image $origInstallWimPath architecture is: $arch" -level $([Constants]::LOG_ERROR)
         return
     }
     else {

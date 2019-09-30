@@ -7,6 +7,7 @@ class DownloadDU: DownloadContents {
 
     [string]$searchPageTemplate = 'https://www.catalog.update.microsoft.com/Search.aspx?q={0}'
     [string]$downloadURL = 'http://www.catalog.update.microsoft.com/DownloadDialog.aspx'
+    [string]$detailedInfoURL = 'https://www.catalog.update.microsoft.com/ScopedViewInline.aspx?updateid={0}'
     [int]$maxTryMonth = 12
     [string]$SSUPath
     [string]$LCUPath
@@ -30,11 +31,11 @@ class DownloadDU: DownloadContents {
         $this.duReleaseMonth = $duReleaseMonth
         $this.forceSSL = $forceSSL
         $this.DUInfoMapping = @{
-            [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $SSUPath};
+            [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $SSUPath };
             [DUType]::LCU     = @{title = "Cumulative Update"; path = $LCUPath };
             # TODO, solve differentiate SafeOS and Setup DU
-            [DUType]::SafeOS  = @{title = "Dynamic Update"; path = $SafeOSPath };
-            [DUType]::SetupDU = @{title = "Dynamic Update"; path = $SetupDUPath };
+            [DUType]::SafeOS  = @{title = "Dynamic Update"; path = $SafeOSPath; product = "Safe OS Dynamic Update" };
+            [DUType]::SetupDU = @{title = "Dynamic Update"; path = $SetupDUPath; description = "SetupUpdate" };
         }
     }
 
@@ -57,6 +58,8 @@ class DownloadDU: DownloadContents {
             Out-Log "Failed to download from $url" -level $([Constants]::LOG_ERROR)
             return $false
         }
+
+        Out-Log "Download $fileName successfully"
         return $true
     }
 
@@ -82,9 +85,9 @@ class DownloadDU: DownloadContents {
 
         try {
             $links = Invoke-WebRequest -Uri $this.downloadURL -Method Post -Body $body -ErrorAction stop |
-            Select-Object -ExpandProperty Content |
-            Select-String -AllMatches -Pattern "(http[s]?\://download\.windowsupdate\.com\/[^\'\""]*)" |
-            Select-Object -Unique
+                Select-Object -ExpandProperty Content |
+                Select-String -AllMatches -Pattern "(http[s]?\://download\.windowsupdate\.com\/[^\'\""]*)" |
+                Select-Object -Unique
         }
         catch {
             Out-Log "Failed to get download link for $DUType" -level $([Constants]::LOG_ERROR)
@@ -106,7 +109,7 @@ class DownloadDU: DownloadContents {
         return $resLinks
     }
 
-    [int]FindTableColumnNumber($columns, [string]$Pattern) {
+    [int]FindTableColumnIndex($columns, [string]$Pattern) {
         $counter = 0
         foreach ($column in $columns) {
             if ($column.InnerHTML -like $Pattern) {
@@ -123,7 +126,7 @@ class DownloadDU: DownloadContents {
             Out-Log "Begin query $url." -level $([Constants]::LOG_DEBUG)
             $KBCatalogPage = Invoke-WebRequest -Uri $url -ErrorAction stop
 
-            # Below line detects the main table which contains updates data.
+            # Find the main table which contains all updates entry.
             $rows = $KBCatalogPage.ParsedHtml.getElementById('ctl00_catalogBody_updateMatches').getElementsByTagName('tr')
         }
         catch {
@@ -144,46 +147,67 @@ class DownloadDU: DownloadContents {
             }
         }
 
-        if ($headerRow) {
+        if ($headerRow -and $dataRows) {
             $columns = $headerRow.getElementsByTagName('td')
         }
         else {
-            Out-Log "No headRow for $DUType" -level $([Constants]::LOG_DEBUG)
+            if (-not $headerRow) {
+                Out-Log "No headRow for $DUType" -level $([Constants]::LOG_DEBUG)
+            }
+
+            if (-not $dataRows) {
+                Out-Log "No dataRows for $DUType" -level $([Constants]::LOG_DEBUG)
+            }
+
             Out-Log "No $DUType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
             return $null
         }
 
-        if (-not $dataRows) {
-            Out-Log "No dataRows for $DUType" -level $([Constants]::LOG_DEBUG)
-            Out-Log "No $DUType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
-            return $null
-        }
+        $dateColumnIndex = $this.FindTableColumnIndex($columns, '*<SPAN>Last Updated</SPAN>*') # date column
+        $titleColumnIndex = $this.FindTableColumnIndex($columns, '*<SPAN>Title</SPAN>*') # title column
+        $productColumnIndex = $this.FindTableColumnIndex($columns, '*<SPAN>Products</SPAN>*') # product column
 
-        # Finding a column where update release date is stored.
-        $dateColumnNumber = $this.FindTableColumnNumber($columns, '*<SPAN>Last Updated</SPAN>*')
-
-        # Finding a column where update title and ID are stored.
-        $titleColumnNumber = $this.FindTableColumnNumber($columns, '*<SPAN>Title</SPAN>*')
-
-        if (($dateColumnNumber -eq $columns.count) -Or ($titleColumnNumber -eq $columns.count) ) {
-            Out-Log "dateColumnNumber = $dateColumnNumber; titleColumnNumber = $titleColumnNumber for $DUType" -level $([Constants]::LOG_DEBUG)
+        if (($dateColumnIndex -eq $columns.count) -or ($titleColumnIndex -eq $columns.count) ) {
+            Out-Log "Indexes(date:title:product) = $dateColumnIndex, $titleColumnIndex, $productColumnIndex for $DUType" -level $([Constants]::LOG_DEBUG)
             Out-Log "No $DUType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
             return $null
         }
 
         $releaseDate = New-Object -TypeName DateTime -ArgumentList @(1, 1, 1)
         $GUID = $null
-        foreach ($Row in $dataRows) {
-            # Here we are looking for a row with the most recent release date.
-            if ($Row.getElementsByTagName('td')[$titleColumnNumber].innerHTML -match 'goToDetails\("(.+)"\);') {
-                # goToDetails contains update's GUID which we use then to request an update download page.
-                $curGuid = $matches[1]
-                $curDate = [datetime]::ParseExact($Row.getElementsByTagName('td')[$dateColumnNumber].innerHTML.Trim(), 'd', $null)
-                if ($releaseDate -lt $curDate) {
-                    # We assume that MS never publishes several versions of an update on the same day.
-                    $releaseDate = $curDate
-                    $GUID = $curGuid
+
+        # we will look for a row with the most recent release date.
+        foreach ($row in $dataRows) {
+            try {
+                # filter Products
+                $DUProduct = $this.DUInfoMapping.$DUType.product
+                if ($DUProduct -and ($row.getElementsByTagName('td')[$productColumnIndex].innerHTML.Trim() -notlike "*$DUProduct*")) {
+                    continue
                 }
+
+                # goToDetails contains update's GUID which we will use to request an update download page and get Detail page
+                if ($row.getElementsByTagName('td')[$titleColumnIndex].innerHTML -match 'goToDetails\("(.+)"\);') {
+                    $curGuid = $matches[1]
+
+                    # filter Description
+                    $detailURL = $this.detailedInfoURL -f $curGuid
+                    $detailPage = Invoke-WebRequest -Uri $detailURL -ErrorAction stop
+
+                    $DUdescription = $this.DUInfoMapping.$DUType.description
+                    if ($DUdescription -and ($detailPage.ParsedHtml.getElementById('ScopedViewHandler_desc').innerHTML.Trim() -notlike "*$DUdescription*")) {
+                        continue
+                    }
+
+                    $curDate = [datetime]::ParseExact($row.getElementsByTagName('td')[$dateColumnIndex].innerHTML.Trim(), 'd', $null)
+                    if ($releaseDate -lt $curDate) {
+                        # We assume that MS never publishes several versions of an update on the same day.
+                        $releaseDate = $curDate
+                        $GUID = $curGuid
+                    }
+                }
+            }
+            catch {
+                Out-Log "Parse HTML failed. Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_DEBUG)
             }
         }
 
@@ -191,12 +215,32 @@ class DownloadDU: DownloadContents {
         return $GUID
     }
 
+    [string]GetDUSearchShowString([DUType]$DUType, [string]$curYearMonth) {
+        $DUTitle = $this.DUInfoMapping.$DUType.title
+        $DUProduct = $this.DUInfoMapping.$DUType.product
+        $DUDescription = $this.DUInfoMapping.$DUType.description
+
+        $res = "(Date: $curYearMonth)"
+        if ($DUTitle) {
+            $res += "(Title: $DUTitle)"
+        }
+
+        if ($DUProduct) {
+            $res += "(Product: $DUProduct)"
+        }
+
+        if ($DUDescription) {
+            $res += "(Description: $DUDescription)"
+        }
+        return $res
+    }
+
     [bool]DownloadByTypeAndDate([DUType]$DUType, [string]$curYearMonth) {
 
-        $DUName = $this.DUInfoMapping.$DUType.name
+        $DUTitle = $this.DUInfoMapping.$DUType.title
 
-        $searchCriteria = "$curYearMonth $DUName $($this.product) version $($this.version) $($this.platform)-based"
-        Out-Log "Begin searching for latest match: '$searchCriteria'"
+        $searchCriteria = "$curYearMonth $DUTitle $($this.product) version $($this.version) $($this.platform)-based"
+        Out-Log ("Begin searching for latest $DUType, Criteria = " + $this.GetDUSearchShowString($DUType, $curYearMonth))
 
         $url = $this.searchPageTemplate -f $searchCriteria
 
@@ -243,11 +287,11 @@ class DownloadDU: DownloadContents {
 
         [enum]::GetNames([DUType]) |
 
-        ForEach-Object {
-            if ($_ -ne [DUType]::Unknown) {
-                $this.DownloadByType($_)
+            ForEach-Object {
+                if ($_ -ne [DUType]::Unknown) {
+                    $this.DownloadByType($_)
+                }
             }
-        }
 
         return $true
     }
