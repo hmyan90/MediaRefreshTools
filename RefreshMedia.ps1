@@ -63,11 +63,11 @@
     .\RefreshMedia.ps1 -media "E:\MediaRefreshTest\old media" -index 1 -packagesPath "E:\MediaRefreshTest\packages" -target "E:\MediaRefreshTest\new media"
 
 .Example
-    .\RefreshMedia.ps1 -media "E:\MediaRefreshTest\old media" -index 1 -packagesPath "E:\MediaRefreshTest\packages" -target "E:\MediaRefreshTest\new media"
+    .\RefreshMedia.ps1 -media "E:\MediaRefreshTest\old media" -index 1 -packagesPath "E:\MediaRefreshTest\packages" -target "E:\MediaRefreshTest\new media" \
                        -capabilityList "Tools.DeveloperMode.Core~~~~0.0.1.0"
 
 .Example
-    .\RefreshMedia.ps1 -media "E:\MediaRefreshTest\old media" -index 1 -packagesPath "E:\MediaRefreshTest\packages" -target "E:\MediaRefreshTest\new media"
+    .\RefreshMedia.ps1 -media "E:\MediaRefreshTest\old media" -index 1 -packagesPath "E:\MediaRefreshTest\packages" -target "E:\MediaRefreshTest\new media" \
                        -capabilityList "Language.Basic~~~fr-FR~0.0.1.0","Language.OCR~~~fr-FR~0.0.1.0" -langList "fr-fr"
 #>
 

@@ -52,8 +52,8 @@ Script won't download Language Packs and Feature On Demands ISO, so you need to 
     Specifies the location of log file.
 
 ## Example
-.\DownloadContents.ps1 -downloadPath .\downloads
-.\DownloadContents.ps1 -downloadPath .\downloads -version 2019-06 -duReleaseMonth 1809
+* .\DownloadContents.ps1 -downloadPath .\downloads
+* .\DownloadContents.ps1 -downloadPath .\downloads -version 2019-06 -duReleaseMonth 1809
 
 
 # RefreshMedia.ps1
