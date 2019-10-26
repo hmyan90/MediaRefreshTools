@@ -82,9 +82,10 @@ The script will do the following four steps sequentially
 * Export Winre.wim from install.wim
 
 #### Patch DU
-* Patch SSU and LCU to Windows Preinstallation environment
+* Patch SSU, LCU to Windows Preinstallation environment
 * Patch SSU, SafeOS to Windows Recovery environment
 * Patch SSU, LCU to Windows Main OS
+* Patch Setup DU to Media
 
 #### Patch FoD
 * Add capabilities to Windows Main OS
