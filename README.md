@@ -82,10 +82,9 @@ The script will do the following four steps sequentially
 * Export Winre.wim from install.wim
 
 #### Patch DU
-* Patch SSU, SafeOS and LCU to Windows Preinstallation environment
-* Patch SSU, SafeOS and LCU to Windows Setup environment
-* Patch SSU, SafeOS and LCU to Windows Recovery environment
-* Patch SSU, SafeOS and LCU to Windows Main OS
+* Patch SSU and LCU to Windows Preinstallation environment
+* Patch SSU, SafeOS to Windows Recovery environment
+* Patch SSU, LCU to Windows Main OS
 
 #### Patch FoD
 * Add capabilities to Windows Main OS
@@ -93,7 +92,7 @@ The script will do the following four steps sequentially
 #### Patch LangPack
 * Add Recovery languages to Windows Main OS (install.wim)
 * Add Language Packs to Windows Recovery Environment (winre.wim in install.wim)
-* Add Language Packs to Windows Setup Environment (boot image index 2)
+* Add Language Packs to Windows Preinstallation environment
 * Notice the script won't add localized Windows Setup resources to the Windows installation media,
 if you want to do this, you need to manually copy the language-specific Setup resources from each language-specific
  Windows distribution to the Sources folder in your Windows distribution.

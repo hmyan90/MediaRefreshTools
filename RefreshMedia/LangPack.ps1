@@ -114,48 +114,6 @@ class PatchLP: PatchMedia {
         return $True
     }
 
-    # AddLPToWinPE($mountPoint, $envName) {
-
-    #     <#
-    #     .SYNOPSIS
-    #         add language pack for WinPE environment
-    #     .DESCRIPTION
-    #         This function will try to find available lp.cab & WinPE-Setup_$lang.cab & WinPE-Setup-Client_$lang.cab in Language Pack and install them
-    #         This function will raise exception when failed, upper function need to handle this exception
-    #     #>
-
-    #     Foreach ($lang in $this.langList) {
-    #         $winPEOCLangPath = Join-Path $this.WinPEOCPath $lang
-
-    #         # Install lp.cab cab
-    #         $lpPath = (Join-Path $winPEOCLangPath "lp.cab")
-    #         Out-Log "Install LangPack $lpPath to $envName"
-    #         Install-Package $mountPoint $lpPath
-
-    #         # Install WinPE-Setup_$lang.cab
-    #         $LPFile = "WinPE-Setup_$lang.cab"
-    #         $LPPath = Join-Path $winPEOCLangPath $LPFile
-    #         if ( Test-Path -Path $LPPath ) {
-    #             Out-Log "Install LangPack $LPPath to $envName"
-    #             Install-Package $mountPoint $LPPath
-    #         }
-    #         else {
-    #             Out-Log "$LPPath not found (possibly a bug)." -level $([Constants]::LOG_WARNING)
-    #         }
-
-    #         # Install WinPE-Setup-Client_$lang.cab
-    #         $LPFile = "WinPE-Setup-Client_$lang.cab"
-    #         $LPPath = Join-Path $winPEOCLangPath $LPFile
-    #         if ( Test-Path -Path $LPPath ) {
-    #             Out-Log "Install LangPack $LPPath to $envName"
-    #             Install-Package $mountPoint $LPPath
-    #         }
-    #         else {
-    #             Out-Log "$LPPath not found (possibly a bug)." -level $([Constants]::LOG_WARNING)
-    #         }
-    #     }
-    # }
-
     AddTTSToWinPE($mountPoint, $envName) {
 
         <#
