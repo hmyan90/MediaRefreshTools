@@ -1,6 +1,7 @@
-﻿# --------------------------------------------------------------
-#  Copyright © Microsoft Corporation.  All Rights Reserved.
-# ---------------------------------------------------------------
+﻿# -------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+# -------------------------------------------------------------------------------------------
 
 
 class PatchFOD: PatchMedia {
@@ -38,7 +39,6 @@ class PatchFOD: PatchMedia {
         return $True
     }
 
-
     [bool]PatchMainOS() {
 
         $mountPoint = Join-Path $this.workingPath $([Constants]::INSTALL_MOUNT)
@@ -69,7 +69,6 @@ class PatchFOD: PatchMedia {
             return $False
         }
     }
-
 
     [void]CleanUp() {
         try {

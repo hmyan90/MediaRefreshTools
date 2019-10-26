@@ -1,6 +1,7 @@
-﻿# --------------------------------------------------------------
-#  Copyright © Microsoft Corporation.  All Rights Reserved.
-# ---------------------------------------------------------------
+﻿# -------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+# -------------------------------------------------------------------------------------------
 
 <#
 .SYNOPSIS
@@ -41,10 +42,10 @@
     Specifies which languages need to be installed, not support Language Interface Packs (LIPs) for this version. This will add:
         1) Language Packs for Main OS
         2) Recovery Language for WinRE.
-        3) Language Packs for Windows Setup. You can use .PARAMETER winSetupLang to choose add or not for Windows Setup, default is not.
+        3) Language Packs for WinPE. You can use .PARAMETER winPELang to disable it if you don't need add language for WinPE.
 
-.PARAMETER winSetupLang
-    Specifies whether to install language packages for Windows Setup
+.PARAMETER winPELang
+    Specifies whether to install language packages for Windows Preinstallation Environment
 
 .PARAMETER capabilityList
     Specifies which capabilities need to be installed.
@@ -93,8 +94,8 @@ Param
     [Parameter(HelpMessage = "Specifies list of languages you want to add")]
     [string[]]$langList,
 
-    [Parameter(HelpMessage = "Specifies whether to install language packages for Windows Setup")]
-    [switch]$winSetupLang = $false,
+    [Parameter(HelpMessage = "Specifies whether to install language packages for Windows Preinstallation Environment")]
+    [switch]$winPELang = $true,
 
     [Parameter(HelpMessage = "Specifies whether to cleanup image components")]
     [switch]$cleanupImage = $true,
@@ -139,7 +140,7 @@ function CheckFreeSpace {
         return $False
     }
 
-    Out-log "Current disk $currentDrive free space is: $freeSizeMB MB. Needed working disk space is: $needSizeMB MB"
+    Out-log "Current disk $currentDrive free space is: $freeSizeMB MB. Needed work disk space is: $needSizeMB MB"
 
     if ($needSizeMB -gt $freeSizeMB) {
         Out-log "No enough disk space. Please specify another disk for Target store." -level $([Constants]::LOG_ERROR)
@@ -304,9 +305,14 @@ function CleanAndAssembleMedia {
         [string]$winREPath,
         [string]$bootWimPath)
 
-    # Do Cleanup Component in winre.wim, boot.wim and install.wim
-    # Do Export winre.wim, boot.wim and install.wim
-    # Reason why do export: Export can remove unnecessary resource files, help cleanup Wim Image a bit
+    <#
+    .SYNOPSIS
+        Cleanup Component in winre.wim, boot.wim and install.wim
+        Export winre.wim, insert this new winre.wim back to install.wim
+        Export boot.wim and install.wim
+    .DESCRIPTION
+        Reason why do Export: Export can remove unnecessary resource files, help cleanup Wim Image a bit
+    #>
 
     Out-Log "Cleanup and assemble media "
     $installMountPoint = Join-Path $workingPath $([Constants]::INSTALL_MOUNT)
@@ -318,7 +324,7 @@ function CleanAndAssembleMedia {
         Out-Log "Cleanup winre.wim " -level $([Constants]::LOG_DEBUG)
         Mount-Image $winREPath 1 $winREMountPoint
         if ($cleanupImage) {
-            Restore-Image $winREMountPoint # cleanup install.wim here
+            Restore-Image $winREMountPoint # cleanup winre.wim here
         }
         Dismount-CommitImage $winREMountPoint
 
@@ -341,16 +347,17 @@ function CleanAndAssembleMedia {
 
         # Export boot.wim
         Out-Log "Cleanup boot.wim " -level $([Constants]::LOG_DEBUG)
-        For ($index = 1; $index -le 2; $index++) {
+        $editionNumber = Get-ImageTotalEdition $bootWimPath
+        For ($index = 1; $index -le $editionNumber; $index++) {
             Mount-Image $bootWimPath $index $winPEMountPoint
             if ($cleanupImage) {
-                Restore-Image $winPEMountPoint
+                Restore-Image $winPEMountPoint # cleanup boot.wim here
             }
             Dismount-CommitImage $winPEMountPoint
         }
 
         $newTmpBootWimPath = Join-Path $newMediaPath "sources/boot2.wim"
-        For ($index = 1; $index -le 2; $index++) {
+        For ($index = 1; $index -le $editionNumber; $index++) {
             Export-Image $bootWimPath $index $newTmpBootWimPath
         }
         Move-File $newTmpBootWimPath $bootWimPath
@@ -460,7 +467,7 @@ function Main {
         Add-Folder $workingPath
 
         # Copy old Media files into new Media
-        Out-Log "Copy media from $oldMediaPath to $newMediaPath, this might take a while if you copy from ISO."
+        Out-Log "Copy media from $oldMediaPath to $newMediaPath, this might take a while if copy from ISO."
         Copy-Files $oldMediaPath\* $newMediaPath
 
         # Check and remove media files read-only
@@ -501,7 +508,7 @@ function Main {
     $newMediaPath,
     $langList,
     $arch,
-    $winSetupLang
+    $winPELang
 
     $patchLCUInstance = New-Object PatchLCU -ArgumentList $dstInstallWimPath,
     $imageIndex,

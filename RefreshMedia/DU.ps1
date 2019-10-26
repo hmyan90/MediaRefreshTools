@@ -1,6 +1,7 @@
-﻿# --------------------------------------------------------------
-#  Copyright © Microsoft Corporation.  All Rights Reserved.
-# ---------------------------------------------------------------
+﻿# -------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+# -------------------------------------------------------------------------------------------
 
 class PatchDU: PatchMedia {
 
@@ -67,6 +68,11 @@ class PatchDU: PatchMedia {
 
 class PatchLCU: PatchDU {
 
+    <#
+    .SYNOPSIS
+        Patch LCU to Main OS and WinPE. Skip LCU for WinRE
+    #>
+
     [string]$LCUPath
 
     PatchLCU ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
@@ -85,18 +91,15 @@ class PatchLCU: PatchDU {
     }
 
     [bool]PatchWinPE() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::WINPE_MOUNT)
-        return ([PatchDU]::PatchDUs($this.bootWimPath, 1, $mountPoint, [Constants]::WINPE, $null, $null, $this.LCUPath))
-    }
+        $editionNumber = Get-ImageTotalEdition $this.bootWimPath
 
-    [bool]PatchWinSetup() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::WIN_SETUP_MOUNT)
-        return ([PatchDU]::PatchDUs($this.bootWimPath, 2, $mountPoint, [Constants]::WIN_SETUP, $null, $null, $this.LCUPath))
-    }
-
-    [bool]PatchWinRE() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::WINRE_MOUNT)
-        return ([PatchDU]::PatchDUs($this.winREPath, 1, $mountPoint, [Constants]::WINRE, $null, $null, $this.LCUPath))
+        For ($index = 1; $index -le $editionNumber; $index++) {
+            $mountPoint = Join-Path $this.workingPath $([Constants]::WINPE_MOUNT)
+            if ( [PatchDU]::PatchDUs($this.bootWimPath, $index, $mountPoint, "$( [Constants]::WINPE )[$index]", $null, $null, $this.LCUPath) -eq $False ) {
+                return $False
+            }
+        }
+        return $True
     }
 
     [bool]PatchMainOS() {
@@ -107,6 +110,15 @@ class PatchLCU: PatchDU {
 
 
 class PatchDUExcludeLCU: PatchDU {
+
+    <#
+    .SYNOPSIS
+        Patch SSU, SafeOS, Setup DU
+    .DESCRIPTION
+        Patch SSU to WinPE, WinRE and Main OS
+        Patch SafeOS to WinRE
+        Patch Setup DU for Media
+    #>
 
     [string]$SSUPath
     [string]$SafeOSPath
@@ -132,13 +144,15 @@ class PatchDUExcludeLCU: PatchDU {
     }
 
     [bool]PatchWinPE() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::WINPE_MOUNT)
-        return ([PatchDU]::PatchDUs($this.bootWimPath, 1, $mountPoint, [Constants]::WINPE, $this.SSUPath, $this.SafeOSPath, $null))
-    }
+        $editionNumber = Get-ImageTotalEdition $this.bootWimPath
 
-    [bool]PatchWinSetup() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::WIN_SETUP_MOUNT)
-        return ([PatchDU]::PatchDUs($this.bootWimPath, 2, $mountPoint, [Constants]::WIN_SETUP, $this.SSUPath, $this.SafeOSPath, $null))
+        For ($index = 1; $index -le $editionNumber; $index++) {
+            $mountPoint = Join-Path $this.workingPath $([Constants]::WINPE_MOUNT)
+            if ( [PatchDU]::PatchDUs($this.bootWimPath, $index, $mountPoint, "$( [Constants]::WINPE )[$index]", $this.SSUPath, $null, $null) -eq $False) {
+                return $False
+            }
+        }
+        return $True
     }
 
     [bool]PatchWinRE() {
@@ -168,7 +182,7 @@ class PatchDUExcludeLCU: PatchDU {
         }
     }
 
-    [bool]PatchSetupBinaries() {
+    [bool]PatchMediaBinaries() {
         $latestSetupDUPath = [PatchDUExcludeLCU]::GetLatestSetupDU($this.SetupDUPath)
         $dstPath = Join-Path $this.newMediaPath "sources"
 

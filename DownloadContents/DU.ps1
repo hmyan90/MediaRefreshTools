@@ -1,6 +1,7 @@
-﻿# --------------------------------------------------------------
-#  Copyright © Microsoft Corporation.  All Rights Reserved.
-# ---------------------------------------------------------------
+﻿# -------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+# -------------------------------------------------------------------------------------------
 
 
 class DownloadDU: DownloadContents {
@@ -33,7 +34,6 @@ class DownloadDU: DownloadContents {
         $this.DUInfoMapping = @{
             [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $SSUPath };
             [DUType]::LCU     = @{title = "Cumulative Update"; path = $LCUPath };
-            # TODO, solve differentiate SafeOS and Setup DU
             [DUType]::SafeOS  = @{title = "Dynamic Update"; path = $SafeOSPath; product = "Safe OS Dynamic Update" };
             [DUType]::SetupDU = @{title = "Dynamic Update"; path = $SetupDUPath; description = "SetupUpdate" };
         }

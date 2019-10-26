@@ -100,7 +100,7 @@ if you want to do this, you need to manually copy the language-specific Setup re
 
 ## Usage
 .\RefreshMedia.ps1  [-media] <String> [-index] <Int32> [-packagesPath] <String> [-target] <String> [[-capabilityList] <String[]>]
-    [[-langList] <String[]>] [-winSetupLang] [-cleanupImage] [[-wimSize] <Int32>] [[-logPath] <String>] [<CommonParameters>]
+    [[-langList] <String[]>] [-winPELang] [-cleanupImage] [[-wimSize] <Int32>] [[-logPath] <String>] [<CommonParameters>]
 
 -media <String>
     Specifies the location of media that needs to be refreshed. You can copy RTM Media to local and specify local path,
@@ -133,10 +133,10 @@ packagesPath
     Specifies which languages need to be installed, not support Language Interface Packs (LIPs) for this version. This will add:
 * Language Packs for Windows Main OS
 * Recovery Language for Windows Recovery Environment.
-* Language Packs for Windows Setup. You can use .PARAMETER winSetupLang to choose add or not for Windows Setup, default is not.
+* Language Packs for Windows Setup. You can use .PARAMETER winPELang to disable it if you don't need add language for WinPE.
 
--winSetupLang
-    Specifies whether to install language packages for Windows Setup
+-winPELang
+    Specifies whether to install language packages for Windows Preinstallation Environment
 
 -wimSize <Int32>
     Specifies maximum size in MB for each of the split .swm files to be created. If install.wim does not exceed this size, won't split.

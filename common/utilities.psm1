@@ -1,6 +1,7 @@
-﻿# --------------------------------------------------------------
-#  Copyright © Microsoft Corporation.  All Rights Reserved.
-# ---------------------------------------------------------------
+﻿# -------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+# -------------------------------------------------------------------------------------------
 
 Set-StrictMode -Version Latest;
 
@@ -12,6 +13,7 @@ Enum DUType {
     SetupDU = 4
 }
 
+
 class Constants {
 
     # wim relative path
@@ -22,12 +24,10 @@ class Constants {
     static [string]$INSTALL_MOUNT = "Installmount"
     static [string]$WINPE_MOUNT = "WinPEmount"
     static [string]$WINRE_MOUNT = "WinREmount"
-    static [string]$WIN_SETUP_MOUNT = "WinSetupmount"
 
     # environment name, for debug/show
     static [string]$MAIN_OS = "Main OS"
     static [string]$WINPE = "WinPE"
-    static [string]$WIN_SETUP = "Windows Setup"
     static [string]$WINRE = "WinRE"
 
     # Some path define
@@ -52,7 +52,7 @@ class Constants {
     static [string]$LOG_WARNING = "warning"
     static [string]$LOG_ERROR = "error"
 
-    # install split
+    # install.wim split
     static [string]$INSTALL_SWM_FILE = "install.swm"
 }
 
@@ -104,7 +104,6 @@ function Remove-File {
     if ( !(Test-Path $filePath) ) { return }
 
     Remove-Item -Path $filePath -ErrorAction stop | Out-Null
-
 }
 
 
@@ -196,7 +195,6 @@ function Restore-Image {
     param([string]$imagePath)
 
     dism /image:$imagePath /cleanup-image /StartComponentCleanup | Out-Null
-    return
 }
 
 
@@ -280,6 +278,15 @@ function Get-ImageName {
 }
 
 
+function Get-ImageTotalEdition {
+    [cmdletbinding()]
+    param([string]$imagePath)
+
+    $info = Get-WindowsImage -ImagePath $imagePath -ErrorAction stop
+    return $info.Count
+}
+
+
 # All status messages are always written to the diagnostic log.
 #
 # Level:
@@ -341,7 +348,6 @@ function Out-Log {
 
 class PatchMedia {
 
-    # Properties
     [string]$installWimPath
     [int]$wimIndex
     [string]$bootWimPath
@@ -366,13 +372,7 @@ class PatchMedia {
     }
 
     [bool]PatchWinPE() {
-        # boot.wim index 1
         return $true
-    }
-
-    [bool]PatchWinSetup() {
-        # boot.wim index 2
-        return $true;
     }
 
     [bool]PatchWinRE() {
@@ -383,7 +383,7 @@ class PatchMedia {
         return $true
     }
 
-    [bool]PatchSetupBinaries() {
+    [bool]PatchMediaBinaries() {
         return $true
     }
 
@@ -400,10 +400,9 @@ class PatchMedia {
         if ( ($this.TestNeedPatch()) ) {
             if ( !($this.Initialize()) ) { return $False }
             if ( !($this.PatchWinPE()) ) { return $False }
-            if ( !($this.PatchWinSetup()) ) { return $False }
             if ( !($this.PatchWinRE()) ) { return $False }
             if ( !($this.PatchMainOS()) ) { return $False }
-            if ( !($this.PatchSetupBinaries()) ) { return $False }
+            if ( !($this.PatchMediaBinaries()) ) { return $False }
             $this.Cleanup()
         }
 
