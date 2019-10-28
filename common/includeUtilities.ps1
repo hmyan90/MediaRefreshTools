@@ -5,7 +5,7 @@
 
 # Create this script to support variable path since using module statement cannot include any variables
 
-$scriptBody = "using module $PSScriptRoot\utilities.psm1";
+$ScriptBody = "using module $PSScriptRoot\utilities.psm1";
 
-$script = [ScriptBlock]::Create($scriptBody);
-. $script
+$Script = [ScriptBlock]::Create($ScriptBody);
+. $Script

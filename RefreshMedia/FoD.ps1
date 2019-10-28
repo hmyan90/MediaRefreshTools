@@ -6,32 +6,32 @@
 
 class PatchFOD: PatchMedia {
 
-    [string]$FODISOPath
-    [string[]]$capabilityList
+    [string]$FodIsoPath
+    [string[]]$CapabilityList
     [string]$FODPath
 
     PatchFOD([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
         [string]$newMediaPath, [string[]]$capabilityList): base($installWimPath, $wimIndex, $bootWimPath,
         $winREPath, $workingPath, $packagesPath, $newMediaPath) {
-        $this.FODISOPath = [PatchFOD]::GetFODISOPath($packagesPath)
-        $this.capabilityList = $capabilityList
+        $this.FodIsoPath = [PatchFOD]::GetFodIsoPath($packagesPath)
+        $this.CapabilityList = $capabilityList
     }
 
     [bool]TestNeedPatch() {
-        return ( $this.capabilityList.Count -gt 0)
+        return ( $this.CapabilityList.Count -gt 0)
     }
 
-    [string]static GetFODISOPath($packagesPath) {
-        $FODISODir = Join-Path $packagesPath $([Constants]::FOD_DIR)
-        return (Get-ChildItem $FODISODir).FullName
+    [string]static GetFodIsoPath($packagesPath) {
+        $fodIsoDir = Join-Path $packagesPath $([Constants]::FOD_DIR)
+        return (Get-ChildItem $fodIsoDir).FullName
     }
 
     [bool]Initialize() {
         try {
-            $driveLetter = Mount-ISO $this.FODISOPath
+            $driveLetter = Mount-ISO $this.FodIsoPath
         }
         catch {
-            Out-Log "Failed to mount $( $this.FODISOPath ). Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
+            Out-Log "Failed to mount $( $this.FodIsoPath ). Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
             return $False
         }
 
@@ -41,13 +41,13 @@ class PatchFOD: PatchMedia {
 
     [bool]PatchMainOS() {
 
-        $mountPoint = Join-Path $this.workingPath $([Constants]::INSTALL_MOUNT)
+        $mountPoint = Join-Path $this.WorkingPath $([Constants]::INSTALL_MOUNT)
 
         try {
-            Out-Log "Mount Image $( $this.installWimPath ) $( $this.wimIndex ) to $mountPoint" -level $([Constants]::LOG_DEBUG)
-            Mount-Image $this.installWimPath $this.wimIndex $mountPoint
+            Out-Log "Mount Image $( $this.InstallWimPath ) $( $this.WimIndex ) to $mountPoint" -level $([Constants]::LOG_DEBUG)
+            Mount-Image $this.InstallWimPath $this.WimIndex $mountPoint
 
-            foreach ($capabilityName in $this.capabilityList) {
+            foreach ($capabilityName in $this.CapabilityList) {
                 Out-Log "Install FoD capability $capabilityName to $([Constants]::MAIN_OS)"
                 Add-Capability $capabilityName $mountPoint $this.FODPath
             }
@@ -72,11 +72,10 @@ class PatchFOD: PatchMedia {
 
     [void]CleanUp() {
         try {
-            Dismount-ISO $this.FODISOPath
+            Dismount-ISO $this.FodIsoPath
         }
         catch {
-            Out-Log "Failed to dismount $( $this.FODISOPath ). Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_WARNING)
+            Out-Log "Failed to dismount $( $this.FodIsoPath ). Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_WARNING)
         }
     }
-
 }

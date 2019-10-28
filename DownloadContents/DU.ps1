@@ -6,49 +6,45 @@
 
 class DownloadDU: DownloadContents {
 
-    [string]$searchPageTemplate = 'https://www.catalog.update.microsoft.com/Search.aspx?q={0}'
-    [string]$downloadURL = 'http://www.catalog.update.microsoft.com/DownloadDialog.aspx'
-    [string]$detailedInfoURL = 'https://www.catalog.update.microsoft.com/ScopedViewInline.aspx?updateid={0}'
-    [int]$maxTryMonth = 12
+    [string]$SearchPageTemplate = 'https://www.catalog.update.microsoft.com/Search.aspx?q={0}'
+    [string]$DownloadURL = 'http://www.catalog.update.microsoft.com/DownloadDialog.aspx'
+    [string]$DetailedInfoURL = 'https://www.catalog.update.microsoft.com/ScopedViewInline.aspx?updateid={0}'
+    [int]$MaxTryMonth = 12
     [string]$SSUPath
     [string]$LCUPath
     [string]$SafeOSPath
     [string]$SetupDUPath
-    [string]$platform
-    [string]$duReleaseMonth
-    [string]$product
-    [string]$version
-    [switch]$showLinksOnly
-    [switch]$forceSSL
+    [string]$DUReleaseMonth
+    [switch]$ForceSSL
     $DUInfoMapping
 
-    DownloadDU([string]$SSUPath, [string]$LCUPath, [string]$SafeOSPath, [string]$SetupDUPath,
+    DownloadDU([string]$ssuPath, [string]$lcuPath, [string]$safeOSPath, [string]$setupDUPath,
         [string]$platform, [string]$duReleaseMonth, [string]$product, [string]$version,
         [switch]$showLinksOnly, [switch]$forceSSL): base($platform, $product, $version, $showLinksOnly) {
-        $this.SSUPath = $SSUPath
-        $this.LCUPath = $LCUPath
-        $this.SafeOSPath = $SafeOSPath
-        $this.SetupDUPath = $SetupDUPath
-        $this.duReleaseMonth = $duReleaseMonth
-        $this.forceSSL = $forceSSL
+        $this.SSUPath = $ssuPath
+        $this.LCUPath = $lcuPath
+        $this.SafeOSPath = $safeOSPath
+        $this.SetupDUPath = $setupDUPath
+        $this.DUReleaseMonth = $duReleaseMonth
+        $this.ForceSSL = $forceSSL
         $this.DUInfoMapping = @{
-            [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $SSUPath };
-            [DUType]::LCU     = @{title = "Cumulative Update"; path = $LCUPath };
-            [DUType]::SafeOS  = @{title = "Dynamic Update"; path = $SafeOSPath; product = "Safe OS Dynamic Update" };
-            [DUType]::SetupDU = @{title = "Dynamic Update"; path = $SetupDUPath; description = "SetupUpdate" };
+            [DUType]::SSU     = @{title = "Servicing Stack Update"; path = $ssuPath };
+            [DUType]::LCU     = @{title = "Cumulative Update"; path = $lcuPath };
+            [DUType]::SafeOS  = @{title = "Dynamic Update"; path = $safeOSPath; product = "Safe OS Dynamic Update" };
+            [DUType]::SetupDU = @{title = "Dynamic Update"; path = $setupDUPath; description = "SetupUpdate" };
         }
     }
 
-    [bool]DownloadFileFromUrl([string]$url, [string]$destinationPath, [string]$fileName) {
+    [bool]DownloadFileFromURL([string]$url, [string]$destinationPath, [string]$fileName) {
 
         $filePath = Join-Path -Path $destinationPath -ChildPath $fileName
 
         try {
+            # try use Start-BitsTransfer first, because it is faster for downloading large files
             if ((Get-Command Start-BitsTransfer -ErrorAction Ignore)) {
                 Start-BitsTransfer -Source $url -Destination $filePath -ErrorAction stop
             }
             else {
-                # Invoke-WebRequest is crazy slow for large downloads
                 Write-Progress -Activity "Downloading $fileName" -Id 1
                 (New-Object Net.WebClient).DownloadFile($url, $filePath)
                 Write-Progress -Activity "Downloading $fileName" -Id 1 -Completed
@@ -56,16 +52,16 @@ class DownloadDU: DownloadContents {
         }
         catch {
             Out-Log "Failed to download from $url" -level $([Constants]::LOG_ERROR)
-            return $false
+            return $False
         }
 
         Out-Log "Download $fileName successfully"
-        return $true
+        return $True
     }
 
     [string]RewriteURL([string]$url) {
 
-        if ($this.forceSSL) {
+        if ($this.ForceSSL) {
             if ($url -match '^https?:\/\/(.+)$') {
                 return 'https://{0}' -f $Matches[1]
             }
@@ -78,24 +74,24 @@ class DownloadDU: DownloadContents {
         }
     }
 
-    [string[]]GetKBDownloadLinksByGUID([string]$guid, [DUType]$DUType) {
+    [string[]]GetKBDownloadLinksByGUID([string]$guid, [DUType]$duType) {
 
         $post = @{ size = 0; updateID = $guid; uidInfo = $guid } | ConvertTo-Json -Compress
         $body = @{ updateIDs = "[$post]" }
 
         try {
-            $links = Invoke-WebRequest -Uri $this.downloadURL -Method Post -Body $body -ErrorAction stop |
+            $links = Invoke-WebRequest -Uri $this.DownloadURL -Method Post -Body $body -ErrorAction stop |
                 Select-Object -ExpandProperty Content |
                 Select-String -AllMatches -Pattern "(http[s]?\://download\.windowsupdate\.com\/[^\'\""]*)" |
                 Select-Object -Unique
         }
         catch {
-            Out-Log "Failed to get download link for $DUType" -level $([Constants]::LOG_ERROR)
+            Out-Log "Failed to get download link for $duType" -level $([Constants]::LOG_ERROR)
             return @()
         }
 
         if (-not $links) {
-            Out-Log "No download link available for $DUType" -level $([Constants]::LOG_ERROR)
+            Out-Log "No download link available for $duType" -level $([Constants]::LOG_ERROR)
             return @()
         }
 
@@ -109,10 +105,10 @@ class DownloadDU: DownloadContents {
         return $resLinks
     }
 
-    [int]FindTableColumnIndex($columns, [string]$Pattern) {
+    [int]FindTableColumnIndex($columns, [string]$pattern) {
         $counter = 0
         foreach ($column in $columns) {
-            if ($column.InnerHTML -like $Pattern) {
+            if ($column.InnerHTML -like $pattern) {
                 break
             }
             $counter++
@@ -120,17 +116,17 @@ class DownloadDU: DownloadContents {
         return $counter
     }
 
-    [string]GetLatestGUID($url, [DUType]$DUType, [string]$curYearMonth) {
+    [string]GetLatestGUID($url, [DUType]$duType, [string]$curYearMonth) {
 
         try {
             Out-Log "Begin query $url." -level $([Constants]::LOG_DEBUG)
-            $KBCatalogPage = Invoke-WebRequest -Uri $url -ErrorAction stop
+            $kbCatalogPage = Invoke-WebRequest -Uri $url -ErrorAction stop
 
             # Find the main table which contains all updates entry.
-            $rows = $KBCatalogPage.ParsedHtml.getElementById('ctl00_catalogBody_updateMatches').getElementsByTagName('tr')
+            $rows = $kbCatalogPage.ParsedHtml.getElementById('ctl00_catalogBody_updateMatches').getElementsByTagName('tr')
         }
         catch {
-            Out-Log "No $DUType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
+            Out-Log "No $duType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
             return $null
         }
 
@@ -152,14 +148,14 @@ class DownloadDU: DownloadContents {
         }
         else {
             if (-not $headerRow) {
-                Out-Log "No headRow for $DUType" -level $([Constants]::LOG_DEBUG)
+                Out-Log "No headRow for $duType" -level $([Constants]::LOG_DEBUG)
             }
 
             if (-not $dataRows) {
-                Out-Log "No dataRows for $DUType" -level $([Constants]::LOG_DEBUG)
+                Out-Log "No dataRows for $duType" -level $([Constants]::LOG_DEBUG)
             }
 
-            Out-Log "No $DUType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
+            Out-Log "No $duType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
             return $null
         }
 
@@ -168,41 +164,41 @@ class DownloadDU: DownloadContents {
         $productColumnIndex = $this.FindTableColumnIndex($columns, '*<SPAN>Products</SPAN>*') # product column
 
         if (($dateColumnIndex -eq $columns.count) -or ($titleColumnIndex -eq $columns.count) ) {
-            Out-Log "Indexes(date:title:product) = $dateColumnIndex, $titleColumnIndex, $productColumnIndex for $DUType" -level $([Constants]::LOG_DEBUG)
-            Out-Log "No $DUType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
+            Out-Log "Indexes(date:title:product) = $dateColumnIndex, $titleColumnIndex, $productColumnIndex for $duType" -level $([Constants]::LOG_DEBUG)
+            Out-Log "No $duType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
             return $null
         }
 
         $releaseDate = New-Object -TypeName DateTime -ArgumentList @(1, 1, 1)
-        $GUID = $null
+        $guid = $null
 
         # we will look for a row with the most recent release date.
         foreach ($row in $dataRows) {
             try {
                 # filter Products
-                $DUProduct = $this.DUInfoMapping.$DUType.product
-                if ($DUProduct -and ($row.getElementsByTagName('td')[$productColumnIndex].innerHTML.Trim() -notlike "*$DUProduct*")) {
+                $duProduct = $this.DUInfoMapping.$duType.product
+                if ($duProduct -and ($row.getElementsByTagName('td')[$productColumnIndex].innerHTML.Trim() -notlike "*$duProduct*")) {
                     continue
                 }
 
-                # goToDetails contains update's GUID which we will use to request an update download page and get Detail page
+                # goToDetails contains update's guid which we will use to request an update download page and get Detail page
                 if ($row.getElementsByTagName('td')[$titleColumnIndex].innerHTML -match 'goToDetails\("(.+)"\);') {
-                    $curGuid = $matches[1]
+                    $curGUID = $Matches[1]
 
                     # filter Description
-                    $detailURL = $this.detailedInfoURL -f $curGuid
+                    $detailURL = $this.DetailedInfoURL -f $curGUID
                     $detailPage = Invoke-WebRequest -Uri $detailURL -ErrorAction stop
 
-                    $DUdescription = $this.DUInfoMapping.$DUType.description
-                    if ($DUdescription -and ($detailPage.ParsedHtml.getElementById('ScopedViewHandler_desc').innerHTML.Trim() -notlike "*$DUdescription*")) {
+                    $duDescription = $this.DUInfoMapping.$duType.description
+                    if ($duDescription -and ($detailPage.ParsedHtml.getElementById('ScopedViewHandler_desc').innerHTML.Trim() -notlike "*$duDescription*")) {
                         continue
                     }
 
-                    $curDate = [datetime]::ParseExact($row.getElementsByTagName('td')[$dateColumnIndex].innerHTML.Trim(), 'd', $null)
+                    $curDate = [DateTime]::ParseExact($row.getElementsByTagName('td')[$dateColumnIndex].innerHTML.Trim(), 'd', $null)
                     if ($releaseDate -lt $curDate) {
                         # We assume that MS never publishes several versions of an update on the same day.
                         $releaseDate = $curDate
-                        $GUID = $curGuid
+                        $guid = $curGUID
                     }
                 }
             }
@@ -211,76 +207,76 @@ class DownloadDU: DownloadContents {
             }
         }
 
-        Out-Log "getLatestGUID = $GUID for $DUType" -level $([Constants]::LOG_DEBUG)
-        return $GUID
+        Out-Log "GetLatestGUID = $guid for $duType" -level $([Constants]::LOG_DEBUG)
+        return $guid
     }
 
-    [string]GetDUSearchShowString([DUType]$DUType, [string]$curYearMonth) {
-        $DUTitle = $this.DUInfoMapping.$DUType.title
-        $DUProduct = $this.DUInfoMapping.$DUType.product
-        $DUDescription = $this.DUInfoMapping.$DUType.description
+    [string]GetDUSearchShowString([DUType]$duType, [string]$curYearMonth) {
+        $duTitle = $this.DUInfoMapping.$duType.title
+        $duProduct = $this.DUInfoMapping.$duType.product
+        $duDescription = $this.DUInfoMapping.$duType.description
 
         $res = "(Date: $curYearMonth)"
-        if ($DUTitle) {
-            $res += "(Title: $DUTitle)"
+        if ($duTitle) {
+            $res += "(Title: $duTitle)"
         }
 
-        if ($DUProduct) {
-            $res += "(Product: $DUProduct)"
+        if ($duProduct) {
+            $res += "(Product: $duProduct)"
         }
 
-        if ($DUDescription) {
-            $res += "(Description: $DUDescription)"
+        if ($duDescription) {
+            $res += "(Description: $duDescription)"
         }
         return $res
     }
 
-    [bool]DownloadByTypeAndDate([DUType]$DUType, [string]$curYearMonth) {
+    [bool]DownloadByTypeAndDate([DUType]$duType, [string]$curYearMonth) {
 
-        $DUTitle = $this.DUInfoMapping.$DUType.title
+        $duTitle = $this.DUInfoMapping.$duType.title
 
-        $searchCriteria = "$curYearMonth $DUTitle $($this.product) version $($this.version) $($this.platform)-based"
-        Out-Log ("Begin searching for latest $DUType, Criteria = " + $this.GetDUSearchShowString($DUType, $curYearMonth))
+        $searchCriteria = "$curYearMonth $duTitle $($this.Product) version $($this.Version) $($this.Platform)-based"
+        Out-Log ("Begin searching for latest $duType, Criteria = " + $this.GetDUSearchShowString($duType, $curYearMonth))
 
-        $url = $this.searchPageTemplate -f $searchCriteria
+        $url = $this.SearchPageTemplate -f $searchCriteria
 
-        $GUID = $this.GetLatestGUID($url, $DUType, $curYearMonth)
-        if (!$GUID) { return $false }
+        $guid = $this.GetLatestGUID($url, $duType, $curYearMonth)
+        if (!$guid) { return $False }
 
-        $downloadLinks = $this.GetKBDownloadLinksByGUID($GUID, $DUType)
-        if (-not $downloadLinks) { return $false }
+        $downloadLinks = $this.GetKBDownloadLinksByGUID($guid, $duType)
+        if (-not $downloadLinks) { return $False }
         Out-Log "Get download links: $downloadLinks" -level $([Constants]::LOG_DEBUG)
 
-        if ($this.showLinksOnly) {
+        if ($this.ShowLinksOnly) {
             Out-Log "$downloadLinks"
-            return $true
+            return $True
         }
 
         foreach ($url in $downloadLinks) {
             if ($url -match '.+/(.+)$') {
-                $this.DownloadFileFromUrl($url, $this.DUInfoMapping.$DUType.path, $Matches[1])
+                $this.DownloadFileFromURL($url, $this.DUInfoMapping.$duType.path, $Matches[1])
             }
         }
 
-        return $true
+        return $True
     }
 
-    [bool]DownloadByType([DUType]$DUType) {
+    [bool]DownloadByType([DUType]$duType) {
 
-        if ( ($DUType -ne [DUType]::SSU) -and ($DUType -ne [DUType]::LCU) -and ($DUType -ne [DUType]::SafeOS) -and ($DUType -ne [DUType]::SetupDU)) {
-            return $false
+        if ( ($duType -ne [DUType]::SSU) -and ($duType -ne [DUType]::LCU) -and ($duType -ne [DUType]::SafeOS) -and ($duType -ne [DUType]::SetupDU)) {
+            return $False
         }
 
-        $curDate = [DateTime]::ParseExact($this.duReleaseMonth, "yyyy-MM", $null)
+        $curDate = [DateTime]::ParseExact($this.DUReleaseMonth, "yyyy-MM", $null)
 
-        For ($i = 0; $i -le $this.maxTryMonth; $i++) {
+        For ($i = 0; $i -le $this.MaxTryMonth; $i++) {
             $curYearMonth = ("{0:d4}-{1:d2}" -f $curDate.Year, $curDate.Month)
-            if ($this.DownloadByTypeAndDate($DUType, $curYearMonth) -eq $true) {
-                return $true
+            if ($this.DownloadByTypeAndDate($duType, $curYearMonth) -eq $True) {
+                return $True
             }
             $curDate = $curDate.date.AddMonths(-1)
         }
-        return $false
+        return $False
     }
 
     [bool]Download() {
@@ -293,6 +289,6 @@ class DownloadDU: DownloadContents {
                 }
             }
 
-        return $true
+        return $True
     }
 }

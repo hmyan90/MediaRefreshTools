@@ -71,7 +71,7 @@ function Test-FolderEmpty {
 
     if ( !(Test-FolderExist $folder) ) {
         # for safety reason
-        return $false
+        return $False
     }
 
     $info = (Get-ChildItem $folder | Measure-Object)
@@ -176,11 +176,14 @@ function Install-Package {
 
 
 function Export-Image {
-
-    # We can also optimize an image by exporting to a new image file with Export-WindowsImage.
-    # When modify an image, DISM stores additional resource files that increase the overall size of the image.
-    # Exporting the image will remove unnecessary resource files.
-
+    <#
+    .SYNOPSIS
+        Export Image
+    .DESCRIPTION
+        We can also optimize an image by exporting to a new image file with Export-WindowsImage.
+        When modify an image, DISM stores additional resource files that increase the overall size of the image.
+        Exporting the image will remove unnecessary resource files.
+    #>
     [cmdletbinding()]
     param([string]$srcPath,
         [int]$index,
@@ -201,8 +204,6 @@ function Restore-Image {
 function Get-Architecture {
     [cmdletbinding()]
     param([string]$imagePath)
-
-    # Hard code mapping here, reference in source code: ntexapi_h_x.w
 
     try {
         $info = Get-WindowsImage -ImagePath $imagePath -Index 1 -ErrorAction stop
@@ -301,8 +302,7 @@ function Get-ImageTotalEdition {
 #
 
 function Write-Message {
-    [CmdletBinding(PositionalBinding = $false)]
-
+    [CmdletBinding(PositionalBinding = $False)]
     param ([validateset("debug", "info", "warning", "error")][string]$level = [Constants]::LOG_INFO,
         [parameter(Position = 0)][string]$message)
 
@@ -326,8 +326,8 @@ function Write-Message {
 function Out-Log {
     [cmdletbinding()]
     param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)][String[]]$messages,
-        [Parameter(Position = 1)][String]$logfile = $global:logPath,
+        [Parameter(Position = 0, Mandatory = $True, ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)][String[]]$messages,
+        [Parameter(Position = 1)][String]$logfile = $global:LogPath,
         [Parameter(Position = 2)][validateset("debug", "info", "warning", "error")][string]$level = [Constants]::LOG_INFO
     );
 
@@ -348,43 +348,43 @@ function Out-Log {
 
 class PatchMedia {
 
-    [string]$installWimPath
-    [int]$wimIndex
-    [string]$bootWimPath
-    [string]$winREPath
-    [string]$workingPath
-    [string]$packagesPath
-    [string]$newMediaPath
+    [string]$InstallWimPath
+    [int]$WimIndex
+    [string]$BootWimPath
+    [string]$WinREPath
+    [string]$WorkingPath
+    [string]$PackagesPath
+    [string]$NewMediaPath
 
     PatchMedia ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
         [string]$newMediaPath) {
-        $this.installWimPath = $installWimPath
-        $this.wimIndex = $wimIndex
-        $this.bootWimPath = $bootWimPath
-        $this.winREPath = $winREPath
-        $this.workingPath = $workingPath
-        $this.packagesPath = $packagesPath
-        $this.newMediaPath = $newMediaPath
+        $this.InstallWimPath = $installWimPath
+        $this.WimIndex = $wimIndex
+        $this.BootWimPath = $bootWimPath
+        $this.WinREPath = $winREPath
+        $this.WorkingPath = $workingPath
+        $this.PackagesPath = $packagesPath
+        $this.NewMediaPath = $newMediaPath
     }
 
     [bool]Initialize() {
-        return $true
+        return $True
     }
 
     [bool]PatchWinPE() {
-        return $true
+        return $True
     }
 
     [bool]PatchWinRE() {
-        return $true
+        return $True
     }
 
     [bool]PatchMainOS() {
-        return $true
+        return $True
     }
 
     [bool]PatchMediaBinaries() {
-        return $true
+        return $True
     }
 
     [void]Cleanup() {
@@ -393,7 +393,7 @@ class PatchMedia {
 
     [bool]TestNeedPatch() {
         # Test whether need to patch according to the existance of DU or ISO file.
-        return $true
+        return $True
     }
 
     [bool]DoPatch() {
@@ -406,7 +406,7 @@ class PatchMedia {
             $this.Cleanup()
         }
 
-        return $true
+        return $True
     }
 }
 
@@ -414,24 +414,24 @@ class PatchMedia {
 class DownloadContents {
 
     # Properties
-    [string]$platform
-    [string]$product
-    [string]$version
-    [switch]$showLinksOnly
+    [string]$Platform
+    [string]$Product
+    [string]$Version
+    [switch]$ShowLinksOnly
 
     DownloadContents ([string]$platform, [string]$product, [string]$version, [switch]$showLinksOnly) {
-        $this.platform = $platform
-        $this.product = $product
-        $this.version = $version
-        $this.showLinksOnly = $showLinksOnly
+        $this.Platform = $platform
+        $this.Product = $product
+        $this.Version = $version
+        $this.ShowLinksOnly = $showLinksOnly
     }
 
     [bool]Initialize() {
-        return $true
+        return $True
     }
 
     [bool]Download() {
-        return $true
+        return $True
     }
 
     [void]Cleanup() {
@@ -444,6 +444,6 @@ class DownloadContents {
         if (!($this.Download())) { return $False }
         $this.Cleanup()
 
-        return $true
+        return $True
     }
 }

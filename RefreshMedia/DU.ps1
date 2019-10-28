@@ -16,34 +16,34 @@ class PatchDU: PatchMedia {
         [string]$newMediaPath): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath, $packagesPath, $newMediaPath) {
     }
 
-    static InstallPackages($imagePath, $Path, $envName, [DUType]$DUType) {
-        if (Test-Path $Path) {
-            Get-ChildItem -Path $Path\* -Include *.msu, *cab |
+    static InstallPackages($imagePath, $path, $envName, [DUType]$duType) {
+        if (Test-Path $path) {
+            Get-ChildItem -Path $path\* -Include *.msu, *cab |
 
                 Foreach-Object {
-                    Out-Log ("Install $( [PatchDU]::DUInfoMapping.$DUType.name ) $( $_.Name ) to $envName")
+                    Out-Log ("Install $( [PatchDU]::DUInfoMapping.$duType.name ) $( $_.Name ) to $envName")
                     Install-Package $imagePath ($_.FullName)
                 }
         }
     }
 
-    static [bool]PatchDUs([string]$wimPath, [int]$index, [string]$mountPoint, [string]$envName, [string]$SSUPath, [string]$SafeOSPath, [string]$LCUPath) {
+    static [bool]PatchDUs([string]$wimPath, [int]$index, [string]$mountPoint, [string]$envName, [string]$ssuPath, [string]$safeOSPath, [string]$lcuPath) {
 
         try {
             Out-Log "Mount Image $wimPath $index to $mountPoint" -level $([Constants]::LOG_DEBUG)
 
             Mount-Image $wimPath $index $mountPoint
 
-            if ( $SSUPath ) {
-                [PatchDU]::InstallPackages($mountPoint, $SSUPath, $envName, [DUType]::SSU)
+            if ( $ssuPath ) {
+                [PatchDU]::InstallPackages($mountPoint, $ssuPath, $envName, [DUType]::SSU)
             }
 
-            if ( $SafeOSPath ) {
-                [PatchDU]::InstallPackages($mountPoint, $SafeOSPath, $envName, [DUType]::SafeOS)
+            if ( $safeOSPath ) {
+                [PatchDU]::InstallPackages($mountPoint, $safeOSPath, $envName, [DUType]::SafeOS)
             }
 
-            if ( $LCUPath ) {
-                [PatchDU]::InstallPackages($mountPoint, $LCUPath, $envName, [DUType]::LCU)
+            if ( $lcuPath ) {
+                [PatchDU]::InstallPackages($mountPoint, $lcuPath, $envName, [DUType]::LCU)
             }
 
             Out-Log "Dismount Image $mountPoint and commit changes" -level $([Constants]::LOG_DEBUG)
@@ -66,89 +66,36 @@ class PatchDU: PatchMedia {
 }
 
 
-class PatchLCU: PatchDU {
+class PatchSSU: PatchDU {
 
     <#
     .SYNOPSIS
-        Patch LCU to Main OS and WinPE. Skip LCU for WinRE
-    #>
-
-    [string]$LCUPath
-
-    PatchLCU ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
-        [string]$newMediaPath): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath, $packagesPath, $newMediaPath) {
-        $this.LCUPath = Join-Path $packagesPath $([Constants]::LCU_DIR)
-    }
-
-    [bool]TestNeedPatch() {
-        $LCUNotExist = ((!(Test-Path $this.LCUPath)) -or (Test-FolderEmpty $this.LCUPath))
-
-        if ( $LCUNotExist ) {
-            Out-Log "No need to patch LCU DU since script cannot find any related packages in $( $this.packagesPath )" -level $([Constants]::LOG_WARNING)
-            return $False
-        }
-        return $True
-    }
-
-    [bool]PatchWinPE() {
-        $editionNumber = Get-ImageTotalEdition $this.bootWimPath
-
-        For ($index = 1; $index -le $editionNumber; $index++) {
-            $mountPoint = Join-Path $this.workingPath $([Constants]::WINPE_MOUNT)
-            if ( [PatchDU]::PatchDUs($this.bootWimPath, $index, $mountPoint, "$( [Constants]::WINPE )[$index]", $null, $null, $this.LCUPath) -eq $False ) {
-                return $False
-            }
-        }
-        return $True
-    }
-
-    [bool]PatchMainOS() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::INSTALL_MOUNT)
-        return ([PatchDU]::PatchDUs($this.installWimPath, $this.wimIndex, $mountPoint, [Constants]::MAIN_OS, $null, $null, $this.LCUPath))
-    }
-}
-
-
-class PatchDUExcludeLCU: PatchDU {
-
-    <#
-    .SYNOPSIS
-        Patch SSU, SafeOS, Setup DU
-    .DESCRIPTION
         Patch SSU to WinPE, WinRE and Main OS
-        Patch SafeOS to WinRE
-        Patch Setup DU for Media
     #>
 
     [string]$SSUPath
-    [string]$SafeOSPath
-    [string]$SetupDUPath
 
-    PatchDUExcludeLCU ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
+    PatchSSU ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
         [string]$newMediaPath): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath, $packagesPath, $newMediaPath) {
         $this.SSUPath = Join-Path $packagesPath $([Constants]::SSU_DIR)
-        $this.SafeOSPath = Join-Path $packagesPath $([Constants]::SAFEOS_DIR)
-        $this.SetupDUPath = Join-Path $packagesPath $([Constants]::SETUPDU_DIR)
     }
 
     [bool]TestNeedPatch() {
         $SSUNotExist = ((!(Test-Path $this.SSUPath)) -or (Test-FolderEmpty $this.SSUPath))
-        $SafeOSNotExist = ((!(Test-Path $this.SafeOSPath)) -or (Test-FolderEmpty $this.SafeOSPath))
-        $SetupDUNotExist = ((!(Test-Path $this.SetupDUPath)) -or (Test-FolderEmpty $this.SetupDUPath))
 
-        if ( ($SSUNotExist -and $SafeOSNotExist -and $SetupDUNotExist) ) {
-            Out-Log "No need to patch SSU or SafeOS or Setup DU since script cannot find any related packages in $( $this.packagesPath )" -level $([Constants]::LOG_WARNING)
+        if ( $SSUNotExist ) {
+            Out-Log "No need to patch SSU since script cannot find any related packages in $( $this.PackagesPath )" -level $([Constants]::LOG_WARNING)
             return $False
         }
         return $True
     }
 
     [bool]PatchWinPE() {
-        $editionNumber = Get-ImageTotalEdition $this.bootWimPath
+        $imageNumber = Get-ImageTotalEdition $this.BootWimPath
 
-        For ($index = 1; $index -le $editionNumber; $index++) {
-            $mountPoint = Join-Path $this.workingPath $([Constants]::WINPE_MOUNT)
-            if ( [PatchDU]::PatchDUs($this.bootWimPath, $index, $mountPoint, "$( [Constants]::WINPE )[$index]", $this.SSUPath, $null, $null) -eq $False) {
+        For ($index = 1; $index -le $imageNumber; $index++) {
+            $mountPoint = Join-Path $this.WorkingPath $([Constants]::WINPE_MOUNT)
+            if ( [PatchDU]::PatchDUs($this.BootWimPath, $index, $mountPoint, "$( [Constants]::WINPE )[$index]", $this.SSUPath, $Null, $Null) -eq $False ) {
                 return $False
             }
         }
@@ -156,13 +103,71 @@ class PatchDUExcludeLCU: PatchDU {
     }
 
     [bool]PatchWinRE() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::WINRE_MOUNT)
-        return ([PatchDU]::PatchDUs($this.winREPath, 1, $mountPoint, [Constants]::WINRE, $this.SSUPath, $this.SafeOSPath, $null))
+        $mountPoint = Join-Path $this.WorkingPath $([Constants]::WINRE_MOUNT)
+        return ([PatchDU]::PatchDUs($this.WinREPath, 1, $mountPoint, [Constants]::WINRE, $this.SSUPath, $Null, $Null))
     }
 
     [bool]PatchMainOS() {
-        $mountPoint = Join-Path $this.workingPath $([Constants]::INSTALL_MOUNT)
-        return ([PatchDU]::PatchDUs($this.installWimPath, $this.wimIndex, $mountPoint, [Constants]::MAIN_OS, $this.SSUPath, $null, $null))
+        $mountPoint = Join-Path $this.WorkingPath $([Constants]::INSTALL_MOUNT)
+        return ([PatchDU]::PatchDUs($this.InstallWimPath, $this.WimIndex, $mountPoint, [Constants]::MAIN_OS, $this.SSUPath, $Null, $Null))
+    }
+}
+
+
+class PatchDUExcludeSSU: PatchDU {
+
+    <#
+    .SYNOPSIS
+        Patch SafeOS, Setup DU, LCU
+    .DESCRIPTION
+        Patch SafeOS to WinRE
+        Patch Setup DU for Media
+        Patch LCU to WinPE, Main OS
+    #>
+
+    [string]$LCUPath
+    [string]$SafeOSPath
+    [string]$SetupDUPath
+
+    PatchDUExcludeSSU ([string]$installWimPath, [int]$wimIndex, [string]$bootWimPath, [string]$winREPath, [string]$workingPath, [string]$packagesPath,
+        [string]$newMediaPath): base($installWimPath, $wimIndex, $bootWimPath, $winREPath, $workingPath, $packagesPath, $newMediaPath) {
+        $this.LCUPath = Join-Path $packagesPath $([Constants]::LCU_DIR)
+        $this.SafeOSPath = Join-Path $packagesPath $([Constants]::SAFEOS_DIR)
+        $this.SetupDUPath = Join-Path $packagesPath $([Constants]::SETUPDU_DIR)
+    }
+
+    [bool]TestNeedPatch() {
+        $SafeOSNotExist = ((!(Test-Path $this.SafeOSPath)) -or (Test-FolderEmpty $this.SafeOSPath))
+        $SetupDUNotExist = ((!(Test-Path $this.SetupDUPath)) -or (Test-FolderEmpty $this.SetupDUPath))
+        $LCUNotExist = ((!(Test-Path $this.LCUPath)) -or (Test-FolderEmpty $this.LCUPath))
+
+        if ( ($SafeOSNotExist -and $SetupDUNotExist -and $LCUNotExist) ) {
+            Out-Log "No need to patch SafeOS and Setup DU and LCU since script cannot find any related packages in $( $this.PackagesPath )" -level $([Constants]::LOG_WARNING)
+            return $False
+        }
+        return $True
+    }
+
+    [bool]PatchWinPE() {
+        $imageNumber = Get-ImageTotalEdition $this.BootWimPath
+
+        For ($index = 1; $index -le $imageNumber; $index++) {
+            $mountPoint = Join-Path $this.WorkingPath $([Constants]::WINPE_MOUNT)
+            if ( [PatchDU]::PatchDUs($this.BootWimPath, $index, $mountPoint, "$( [Constants]::WINPE )[$index]", $null, $Null, $this.LCUPath) -eq $False) {
+                return $False
+            }
+        }
+        return $True
+    }
+
+    [bool]PatchWinRE() {
+        $mountPoint = Join-Path $this.WorkingPath $([Constants]::WINRE_MOUNT)
+        return ([PatchDU]::PatchDUs($this.WinREPath, 1, $mountPoint, [Constants]::WINRE, $Null, $this.SafeOSPath, $Null))
+    }
+
+    [bool]PatchMainOS() {
+        $mountPoint = Join-Path $this.WorkingPath $([Constants]::INSTALL_MOUNT)
+        return ([PatchDU]::PatchDUs($this.InstallWimPath, $this.WimIndex, $mountPoint, [Constants]::MAIN_OS, $Null, $Null, $this.LCUPath))
     }
 
     static [string]GetLatestSetupDU([string]$setupDUPath) {
@@ -174,17 +179,17 @@ class PatchDUExcludeLCU: PatchDU {
             return (Join-Path $setupDUPath $fileNames)
         }
         elseif ( $fileNames.count -eq 0 ) {
-            return $null
+            return $Null
         }
         else {
             # Should not reach here since we already checked the number
-            return $null
+            return $Null
         }
     }
 
     [bool]PatchMediaBinaries() {
-        $latestSetupDUPath = [PatchDUExcludeLCU]::GetLatestSetupDU($this.SetupDUPath)
-        $dstPath = Join-Path $this.newMediaPath "sources"
+        $latestSetupDUPath = [PatchDUExcludeSSU]::GetLatestSetupDU($this.SetupDUPath)
+        $dstPath = Join-Path $this.NewMediaPath "sources"
 
         if ( $latestSetupDUPath ) {
             Out-Log "Install SetupDU $( Split-Path $latestSetupDUPath -leaf ) to new media"
@@ -193,13 +198,13 @@ class PatchDUExcludeLCU: PatchDU {
             }
             catch {
                 Out-Log "Failed to patch Setup DU. Detail: $( $_.Exception.Message )" -level $([Constants]::LOG_ERROR)
-                return $false
+                return $False
             }
         }
         else {
             Out-Log "Didn't find any related Setup DU." -level $([Constants]::LOG_WARNING)
         }
 
-        return $true
+        return $True
     }
 }
