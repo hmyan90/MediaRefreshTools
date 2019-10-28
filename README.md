@@ -162,13 +162,13 @@ PackagesPath
     Specifies the location of log file.
 
 ## Example
-.\RefreshMedia.ps1 -Media "E:\MediaRefreshTest\old media" -Index 1 -PackagesPath "E:\MediaRefreshTest\packages" -Target "E:\MediaRefreshTest\new media"
-                   -CapabilityList "Language.Basic~~~fr-FR~0.0.1.0", "Tools.DeveloperMode.Core~~~~0.0.1.0" -LangList "fr-fr", "zh-cn"
+.\RefreshMedia.ps1 -Media "E:\MediaRefreshTest\old media" -Index 1 -PackagesPath "E:\MediaRefreshTest\packages" -Target "E:\MediaRefreshTest\new media" `
+-CapabilityList "Language.Basic~~~fr-FR~0.0.1.0", "Tools.DeveloperMode.Core~~~~0.0.1.0" -LangList "fr-fr", "zh-cn"
 
 # Run
-* Download scripts to your local machine
+* Download MediaRefreshTool-master.zip to your local machine, and decompress it
 * Start PowerShell with Run as Administrator on your machine, set policy using 'Set-ExecutionPolicy -ExecutionPolicy Unrestricted'
-* Run scripts as Example described above
+* cd MediaRefreshTool-master\src\, run scripts as Example described above. You will find logs in this directory
 
 
 # Contributing
