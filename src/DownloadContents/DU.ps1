@@ -52,6 +52,7 @@ class DownloadDU: DownloadContents {
         }
         catch {
             Out-Log "Failed to download from $url" -level $([Constants]::LOG_ERROR)
+            Out-Log "Exception detail: $( $_.Exception.Message )" -level $([Constants]::LOG_DEBUG)
             return $False
         }
 
@@ -87,6 +88,7 @@ class DownloadDU: DownloadContents {
         }
         catch {
             Out-Log "Failed to get download link for $duType" -level $([Constants]::LOG_ERROR)
+            Out-Log "Exception detail: $( $_.Exception.Message )" -level $([Constants]::LOG_DEBUG)
             return @()
         }
 
@@ -126,6 +128,7 @@ class DownloadDU: DownloadContents {
             $rows = $kbCatalogPage.ParsedHtml.getElementById('ctl00_catalogBody_updateMatches').getElementsByTagName('tr')
         }
         catch {
+            Out-Log "Ignored exception detail: $( $_.Exception.Message )" -level $([Constants]::LOG_DEBUG)
             Out-Log "No $duType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
             return $null
         }
@@ -208,6 +211,11 @@ class DownloadDU: DownloadContents {
         }
 
         Out-Log "GetLatestGUID = $guid for $duType" -level $([Constants]::LOG_DEBUG)
+
+        if (!$guid) {
+            Out-Log "No $duType found for $curYearMonth" -level $([Constants]::LOG_WARNING)
+        }
+
         return $guid
     }
 
