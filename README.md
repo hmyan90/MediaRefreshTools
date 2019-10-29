@@ -103,7 +103,11 @@ The script will do the following 6 steps sequentially:
 * Notice the script won't add localized Windows Setup resources to the Windows installation media,
 if you want to do this, you need to manually copy the language-specific Setup resources from each language-specific
  Windows distribution to the Sources folder in your Windows distribution.
-
+* For a particular language you specified in PARAMETER $LangList (see below), notice the script won't add FODs like language basics, 
+fonts, optical character recognition, handwriting, text-to-speech, and speech recognition into Main OS automatically. You need 
+to explicitly add them using PARAMETER $CapabilityList (see below). You can save disk space by choosing not to include some language 
+components in your image. While this reduction in image size can be helpful when creating images for lower-cost devices with small 
+storage, it does lead to an incomplete language experience. So please decide them carefully.
 
 #### Add Feature On Demand
 * Add Feature On Demand capabilities to Windows Main OS
