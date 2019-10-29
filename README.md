@@ -186,7 +186,7 @@ PackagesPath
 
 
 # Contributing
-Please read [CONTRIBUTING](CONTRIBUTING) for details, and the process of submitting pull requests.
+Please read [CONTRIBUTING](CONTRIBUTING.md) for details, and the process of submitting pull requests.
 
 
 # License
