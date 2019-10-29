@@ -5,7 +5,7 @@
 
 <#
 .SYNOPSIS
-    This script provides functionality to refresh Windows 10 Media with Dynamic Updates and adding additional Language Packs and Feature On Demands Offline.
+    This script provides functionality to refresh Windows 10 Media with Dynamic Updates and adding additional Language Packs and Feature On Demand Offline.
 
 .Description
     Before run the script, please download all dynamic update packages, Feature On Demand ISO, Language Pack ISO, and place them in directory .PARAMETER PackagesPath before continue.
@@ -314,7 +314,7 @@ function CleanAndAssembleMedia {
         Reason why do Export: Export can remove unnecessary resource files, help cleanup Wim Image a bit
     #>
 
-    Out-Log "Cleanup and assemble media "
+    Out-Log "Cleanup and assemble media, it can take one hour or more to cleanup"
     $installMountPoint = Join-Path $WorkingPath $([Constants]::INSTALL_MOUNT)
     $winREMountPoint = Join-Path $WorkingPath $([Constants]::WINRE_MOUNT)
     $winPEMountPoint = Join-Path $WorkingPath $([Constants]::WINPE_MOUNT)
@@ -470,7 +470,7 @@ function Main {
         Out-Log "Copy media from $OldMediaPath to $NewMediaPath, this might take a while if copy from ISO."
         Copy-Files $OldMediaPath\* $NewMediaPath
 
-        # Check and remove media files read-only
+        # Check and remove media files read-only attribute
         RemoveFilesReadOnlyAttr $NewMediaPath
     }
     catch {
@@ -519,8 +519,8 @@ function Main {
     $NewMediaPath
 
     if ( !($patchSSUInstance.DoPatch())) { CleanupWhenFail; return }
-    if ( !($patchFODInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !($patchLPInstance.DoPatch())) { CleanupWhenFail; return }
+    if ( !($patchFODInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !($patchDUExcludeSSUInstance.DoPatch())) { CleanupWhenFail; return }
     if ( !(CleanAndAssembleMedia $dstInstallWimPath $winREPath $bootWimPath) ) { CleanupWhenFail; return }
     SplitInstallWim $dstInstallWimPath $wimSize

@@ -66,7 +66,7 @@ Param
     [string]$Version = "1809",
 
     [Parameter(HelpMessage = "Specifies month of release of Dynamic Updates")]
-    [ValidateScript( { [DateTime]::ParseExact($_, "yyyy-MM", $null) })]
+    [ValidateScript( { [DateTime]::ParseExact($_, "yyyy-MM", $Null) })]
     [string]$DUReleaseMonth = ("{0:d4}-{1:d2}" -f (Get-Date).Year, (Get-Date).Month),
 
     [Parameter(HelpMessage = "Show download links only")]

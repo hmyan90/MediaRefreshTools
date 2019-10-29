@@ -181,7 +181,7 @@ class PatchLP: PatchMedia {
         }
     }
 
-    AddOcLP($mountPoint, $envName) {
+    AddOcLPToWinPE($mountPoint, $envName) {
         <#
         .SYNOPSIS
             add language packs for WinPE Optional Components
@@ -197,12 +197,12 @@ class PatchLP: PatchMedia {
             $winPEOCLangPath = Join-Path $this.WinPEOCPath $lang
             $cabs = Get-ChildItem $winPEOCLangPath -name
 
-            # Install lp.cab cab
+            # Install lp.cab
             $lpPath = Join-Path $winPEOCLangPath "lp.cab"
             Out-Log "Install LangPack $lpPath to $envName"
             Install-Package $mountPoint $lpPath
 
-            # Install OC cab
+            # Install Optional Component language cab
             Foreach ($package in $winPEInstalledOC) {
 
                 if ( ($package.PackageState -eq "Installed") `
@@ -239,9 +239,9 @@ class PatchLP: PatchMedia {
                 Out-Log "Mount Image $( $this.BootWimPath ) Index $index to $mountPoint" -level $([Constants]::LOG_DEBUG)
                 Mount-Image $this.BootWimPath $index $mountPoint
 
+                $this.AddOcLPToWinPE($mountPoint, $envName)
                 $this.AddFontSupportToWinPE($mountPoint, $envName)
                 $this.AddTTSToWinPE($mountPoint, $envName)
-                $this.AddOcLP($mountPoint, $envName)
                 $this.GenLangIni($mountPoint, $envName)
 
                 Out-Log "Dismount Image $mountPoint and commit changes" -level $([Constants]::LOG_DEBUG)
@@ -271,7 +271,9 @@ class PatchLP: PatchMedia {
             Out-Log "Mount Image $( $this.WinREPath ) 1 to $mountPoint" -level $([Constants]::LOG_DEBUG)
             Mount-Image $this.WinREPath 1 $mountPoint
 
-            $this.AddOcLP($mountPoint, $envName)
+            $this.AddOcLPToWinPE($mountPoint, $envName)
+            $this.AddFontSupportToWinPE($mountPoint, $envName)
+            $this.AddTTSToWinPE($mountPoint, $envName)
 
             Out-Log "Dismount Image $mountPoint and commit changes" -level $([Constants]::LOG_DEBUG)
             Dismount-CommitImage $mountPoint

@@ -14,9 +14,14 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 
 ## Pull Request
-* When contributing to this repository, you are encouraged to first discuss the change you wish to make via issue, email, or
+* When contributing to this repository, you are encouraged to first discuss the change you wish to make via issues, email, or
 any other method with the owners of this repository before making a change.
 * Note we follow the PowerShell Best Practices and Style Guide(https://github.com/PoshCode/PowerShellPracticeAndStyle), when
 making your change, please make sure you follow the guide. For variable name capitalization, which is a matter of taste, we
-use PascalCasing for all public member, type and namespace names consisting of multiple words; we use camelCasing for parameter names.
+use PascalCasing for all public member, type and namespace names consisting of multiple words, we use camelCasing for parameter names.
 Please help us keep all variable name consistent.
+* We will try our best to response your pull request in time.
+
+
+## Thank You!
+Thank you for taking the time to contribute.

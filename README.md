@@ -6,6 +6,7 @@ automatically. These tools will help IT administrators to update Windows Image e
 PowerShell script for downloading latest Dynamic Update packages from [Microsoft Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx).
 Alternatively, you can manually download Dynamic Update packages without using this script.
 
+
 ## Announcements
 * This script uses PowerShell Invoke-WebRequest Cmdlet, this depends on Internet Explorer engine, so make sure you setup Internet Explorer properly.
 * This script parses html of [Microsoft Update Catalog](https://www.catalog.update.microsoft.com/Home.aspx). If this website changes, this script may or may not be affected.
@@ -26,7 +27,7 @@ DownloadPath
 └───FOD
 ```
 Then the script will download latest SSU into SSU/, latest LCU into LCU/, latest SafeOS into SafeOS/, latest SetupDU into SetupDU/.
-Script won't download Language Packs and Feature On Demands ISO, so you need to download FOD and LP ISO from Microsoft Volume
+Script won't download Language Packs and Feature On Demand ISO, so you need to download FOD and LP ISO from Microsoft Volume
 Licensing Service Center and put them into corresponding subfolder.
 
 
@@ -55,6 +56,7 @@ Licensing Service Center and put them into corresponding subfolder.
 -LogPath
     Specifies the location of log file.
 
+
 ## Example
 * .\DownloadContents.ps1 -DownloadPath .\downloads
 * .\DownloadContents.ps1 -DownloadPath .\downloads -Version 2019-06 -DUReleaseMonth 1809
@@ -62,7 +64,8 @@ Licensing Service Center and put them into corresponding subfolder.
 
 # RefreshMedia.ps1
 PowerShell script for refreshing Windows 10 Media with Dynamic Updates and adding additional Language Packs and
-Feature On Demands Offline.
+Feature On Demand Offline.
+
 
 ## Preparation before running
 Before running the script, please download all dynamic update packages, Feature On Demand ISO, Language Pack ISO,
@@ -76,34 +79,41 @@ and place them in directory .PARAMETER $PackagesPath before continue.
 * Download OEM Language Pack ISO, e.g. 17763.1.180914-1434.rs5_release_CLIENTLANGPACKDVD_OEM_MULTI.iso,
   and put it in $PackagesPath/LP/17763.1.180914-1434.rs5_release_CLIENTLANGPACKDVD_OEM_MULTI.iso
 
-Or you can simply run DownloadContents.ps1, then manually download Feature On Demands ISO and OEM Language Pack ISO.
+Or you can simply run DownloadContents.ps1, then manually download Feature On Demand ISO and OEM Language Pack ISO.
+
 
 ## Description
 The script will do the following 6 steps sequentially:
+
 
 #### Preparation
 * Check input parameters and package layout are okay.
 * Check local environment has enough disk space for working. We need about 15GB.
 * Export Winre.wim from Install.wim
 
+
 #### Patch SSU
 * Patch SSU to Windows Preinstallation environment, Windows Recovery environment and Main OS
 
+
 #### Add Language Packs
-* Add Recovery languages to Windows Main OS (install.wim)
-* Add Language Packs to Windows Recovery Environment (winre.wim in install.wim)
+* Add Language Packs to Windows Main OS (install.wim)
+* Add Recovery languages to Windows Recovery Environment (winre.wim in install.wim)
 * Add Language Packs to Windows Preinstallation environment
 * Notice the script won't add localized Windows Setup resources to the Windows installation media,
 if you want to do this, you need to manually copy the language-specific Setup resources from each language-specific
  Windows distribution to the Sources folder in your Windows distribution.
 
-#### Add Feature On Demands
-* Add Feature On Demands capabilities to Windows Main OS
+
+#### Add Feature On Demand
+* Add Feature On Demand capabilities to Windows Main OS
+
 
 #### Patch SafeOS, Setup DU and LCU
 * Patch SafeOS to Windows Recovery environment
 * Patch Setup DU to Media
 * Patch LCU to Windows Preinstallation environment and Main OS
+
 
 #### Finishing up
 * Cleanup patched winre.wim, boot.wim and install.wim
@@ -111,9 +121,11 @@ if you want to do this, you need to manually copy the language-specific Setup re
 * Export patched install.wim
 * Export patched winre.wim
 
+
 ## Usage
 .\RefreshMedia.ps1  [-Media] <String> [-Index] <Int32> [-PackagesPath] <String> [-Target] <String> [[-CapabilityList] <String[]>]
     [[-LangList] <String[]>] [-WinPELang] [-CleanupImage] [[-WimSize] <Int32>] [[-LogPath] <String>] [<CommonParameters>]
+
 
 -Media <String>
     Specifies the location of media that needs to be refreshed. You can copy RTM Media to local and specify local path,
@@ -161,9 +173,11 @@ PackagesPath
 -LogPath <String>
     Specifies the location of log file.
 
+
 ## Example
 .\RefreshMedia.ps1 -Media "E:\MediaRefreshTest\old media" -Index 1 -PackagesPath "E:\MediaRefreshTest\packages" -Target "E:\MediaRefreshTest\new media" `
 -CapabilityList "Language.Basic~~~fr-FR~0.0.1.0", "Tools.DeveloperMode.Core~~~~0.0.1.0" -LangList "fr-fr", "zh-cn"
+
 
 # Run
 * Download MediaRefreshTool-master.zip to your local machine, and decompress it
@@ -172,8 +186,9 @@ PackagesPath
 
 
 # Contributing
-Please read CONTRIBUTING.md for details on our code of conduct, and the process of submitting pull requests.
+Please read [CONTRIBUTING](CONTRIBUTING) for details, and the process of submitting pull requests.
+
 
 # License
-This project is licensed under the MIT License - See the LICENSE.md file for details.
+This project is licensed under the MIT License - See the [LICENSE](LICENSE)  file for details.
 

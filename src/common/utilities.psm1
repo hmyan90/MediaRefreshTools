@@ -399,8 +399,8 @@ class PatchMedia {
     [bool]DoPatch() {
         if ( ($this.TestNeedPatch()) ) {
             if ( !($this.Initialize()) ) { return $False }
-            if ( !($this.PatchWinPE()) ) { return $False }
             if ( !($this.PatchWinRE()) ) { return $False }
+            if ( !($this.PatchWinPE()) ) { return $False }
             if ( !($this.PatchMainOS()) ) { return $False }
             if ( !($this.PatchMediaBinaries()) ) { return $False }
             $this.Cleanup()
